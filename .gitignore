@@ -1,0 +1,33 @@
+# .NET / ASP.NET
+bin/
+obj/
+*.user
+.vs/
+appsettings.Development.json
+*.suo
+*.userprefs
+
+# Node / Frontend
+node_modules/
+dist/
+.next/
+.nuxt/
+*.local
+
+# Umgebungsvariablen
+.env
+
+# Docker
+docker-compose.override.yml
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# JetBrains IDEs
+.idea/
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
