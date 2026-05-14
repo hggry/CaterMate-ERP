@@ -1,6 +1,76 @@
 # CLAUDE.md
 
-Diese Datei enthält Anweisungen für Claude Code (claude.ai/code) beim Arbeiten in diesem Repository.
+Verhaltensrichtlinien zur Reduzierung häufiger LLM-Coding-Fehler — kombiniert mit projektspezifischen Anweisungen unten.
+
+**Abwägung:** Diese Richtlinien priorisieren Sorgfalt gegenüber Geschwindigkeit. Bei trivialen Aufgaben ist Urteilsvermögen gefragt.
+
+## 1. Erst denken, dann coden
+
+**Keine Annahmen. Keine versteckte Verwirrung. Abwägungen benennen.**
+
+Vor der Implementierung:
+- Annahmen explizit nennen. Bei Unsicherheit fragen.
+- Wenn mehrere Interpretationen möglich sind, diese vorstellen – nicht stillschweigend eine wählen.
+- Wenn ein einfacherer Ansatz existiert, diesen nennen. Gegebenenfalls widersprechen.
+- Bei Unklarheiten: Stopp. Die Unklarheit benennen. Fragen.
+
+> **Projekthinweis:** Bei Unklarheiten über das erwartete Verhalten zuerst `Doc/use_cases.md` (UC-01 bis UC-09) konsultieren – das ist die maßgebliche Quelle.
+
+## 2. Einfachheit zuerst
+
+**Minimaler Code, der das Problem löst. Nichts Spekulatives.**
+
+- Keine Features, die nicht verlangt wurden.
+- Keine Abstraktionen für einmalig verwendeten Code.
+- Keine „Flexibilität" oder „Konfigurierbarkeit", die nicht angefragt wurde.
+- Keine Fehlerbehandlung für unmögliche Szenarien.
+- Wenn 200 Zeilen auf 50 reduziert werden können: neu schreiben.
+
+Frage dich: „Würde ein erfahrener Entwickler das als überkompliziert bezeichnen?" Wenn ja: vereinfachen.
+
+> **Projekthinweis:** Der MVP-Scope ist in `Doc/functional_scope.md` definiert. Im Zweifel: weniger ist mehr.
+
+## 3. Chirurgische Änderungen
+
+**Nur das anfassen, was nötig ist. Nur den eigenen Mess aufräumen.**
+
+Beim Bearbeiten von bestehendem Code:
+- Keinen angrenzenden Code, Kommentare oder Formatierung „verbessern".
+- Nichts refaktorieren, was nicht kaputt ist.
+- Den bestehenden Stil übernehmen, auch wenn man es anders machen würde.
+- Ungenutzten Code entdecken: erwähnen – nicht löschen.
+
+Wenn eigene Änderungen Waisen erzeugen:
+- Imports/Variablen/Funktionen entfernen, die durch EIGENE Änderungen ungenutzt wurden.
+- Vorhandenen toten Code nicht entfernen, außer explizit beauftragt.
+
+Der Test: Jede geänderte Zeile muss direkt auf die Anfrage des Users zurückzuführen sein.
+
+> **Projekthinweis:** Namenskonventionen und Projektstruktur sind in `Doc/code-guidelines.md` festgelegt – immer daran orientieren.
+
+## 4. Zielorientierte Ausführung
+
+**Erfolgskriterien definieren. Wiederholen bis verifiziert.**
+
+Aufgaben in verifizierbare Ziele umwandeln:
+- „Validierung hinzufügen" → „Tests für ungültige Eingaben schreiben, dann zum Bestehen bringen"
+- „Den Bug fixen" → „Test schreiben, der ihn reproduziert, dann zum Bestehen bringen"
+- „X refaktorieren" → „Tests vor und nach dem Refactoring zum Bestehen bringen"
+
+Bei mehrstufigen Aufgaben einen kurzen Plan angeben:
+```
+1. [Schritt] → Verifikation: [Prüfung]
+2. [Schritt] → Verifikation: [Prüfung]
+3. [Schritt] → Verifikation: [Prüfung]
+```
+
+Starke Erfolgskriterien ermöglichen eigenständiges Iterieren. Schwache Kriterien („mach es zum Laufen") erfordern ständige Nachfragen.
+
+---
+
+**Diese Richtlinien funktionieren, wenn:** weniger unnötige Änderungen in Diffs, weniger Rewrites durch Überkomplizierung, und klärende Fragen kommen vor der Implementierung statt nach Fehlern.
+
+---
 
 ## Projektübersicht
 
