@@ -103,7 +103,7 @@ Das System folgt einem Pipeline-Modell, das auf der zentralen **Auftrag**-Entit�
 ### Zentrale Domänen-Entitäten
 
 - **Auftrag** — zentrale Entität; der Status steuert alle Workflows
-  - Status-Pipeline: `Neu` → `Geprüft` → `Angebot erstellt` → `Bestätigt` → `In Beschaffung` → `In Vorbereitung` → `Durchgeführt` → `Abgerechnet`
+  - Status-Pipeline: `Neu` → `Geprüft` → `AngebotErstellt` → `Bestätigt` → `InBeschaffung` → `InVorbereitung` → `Durchgeführt` → `Abgerechnet`
 - **Menüartikel** — Gerichte mit Verkaufspreis, Einkaufspreis, Allergen-Kennzeichnung und Stückliste
 - **Zutat** — Zutaten-Stammdaten (reine Referenz, keine Bestandsführung)
 - **Angebot** — Angebot, generiert aus einem Auftrag; wird als PDF exportiert
