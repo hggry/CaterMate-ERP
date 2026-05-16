@@ -1,0 +1,84 @@
+services:
+
+  db:
+    build:
+      context: ./db
+    env_file: .env.dev
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - catermate_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: Source/Docker/backend/Dockerfile
+    env_file: .env.dev
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__DefaultConnection: >-
+        Server=db;Port=3306;Database=${DB_NAME};
+        User ID=${DB_USER};Password=${DB_PASSWORD};
+        CharSet=utf8mb4;
+    ports:
+      - "${BACKEND_PORT}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - catermate_net
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: Source/Docker/frontend/Dockerfile
+    env_file: .env.dev
+    environment:
+      VITE_API_BASE_URL: http://localhost:${BACKEND_PORT}
+    ports:
+      - "${FRONTEND_PORT}:80"
+    depends_on:
+      - backend
+    networks:
+      - catermate_net
+
+  n8n:
+    image: n8nio/n8n:latest
+    env_file: .env.dev
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_PASSWORD}
+      GENERIC_TIMEZONE: ${TIMEZONE}
+      N8N_HOST: localhost
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:${N8N_PORT}/
+    ports:
+      - "${N8N_PORT}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - catermate_net
+
+volumes:
+  db_data:
+  n8n_data:
+
+networks:
+  catermate_net:
+    driver: bridge
