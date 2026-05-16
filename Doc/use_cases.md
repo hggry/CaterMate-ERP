@@ -29,7 +29,7 @@
 
 ---
 
-### UC-04: Angebot generieren
+### UC-03: Angebot generieren
 
 - **Akteur:** User
 - **Auslöser:** Auftrag im Status `Geprüft`, Gerichte zugeordnet
@@ -45,7 +45,7 @@
 
 ---
 
-### UC-05: Auftrag bestätigen und Beschaffung anstoßen
+### UC-04: Auftrag bestätigen und Beschaffung anstoßen
 
 - **Akteur:** User
 - **Auslöser:** Kunde nimmt Angebot an
@@ -59,7 +59,7 @@
 
 ---
 
-### UC-08: Eingangsrechnung erfassen und Stammdaten aktualisieren
+### UC-05: Eingangsrechnung erfassen und Stammdaten aktualisieren
 
 - **Akteur:** User
 - **Auslöser:** Lieferantenrechnung liegt vor
@@ -73,7 +73,7 @@
 
 ---
 
-### UC-07: Beschaffung abschließen und Auftrag in Vorbereitung
+### UC-06: Beschaffung abschließen und Auftrag in Vorbereitung
 
 - **Akteur:** User
 - **Auslöser:** Alle Zutaten wurden eingekauft
@@ -94,7 +94,7 @@
 
 ---
 
-### UC-09: Geschäft steuern über Kennzahlen-Dashboard
+### UC-08: Geschäft steuern über Kennzahlen-Dashboard
 
 - **Akteur:** User
 - **Auslöser:** Wöchentliche Steuerung
@@ -106,7 +106,7 @@
 
 ---
 
-### UC-03: Stammdaten pflegen
+### UC-09: Stammdaten pflegen
 
 - **Akteur:** User
 - **Auslöser:** Neues Gericht aufnehmen oder bestehendes anpassen
