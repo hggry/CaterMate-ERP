@@ -20,7 +20,7 @@ docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workf
 
 ## 🗄️Befehle für PostgreSQL Datenbank:
 
-Zur DB im Terminal navigieren: 'docker exec -it ai-service-postgres-1 psql -U n8n -d n8n'
+Zur DB im Terminal navigieren: **docker exec -it ai-service-postgres-1 psql -U n8n -d n8n**
 
-state der Anfrage in Tabelle Konversation selektieren: 'SELECT state FROM konversationen;'
+state der Anfrage in Tabelle Konversation selektieren: **SELECT state FROM konversationen;**
 
