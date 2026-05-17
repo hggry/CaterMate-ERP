@@ -11,7 +11,7 @@
 **1.1.2 Auftragsverwaltung**
 
 - Übersichtsliste aller Aufträge mit Filter nach Status und Datum.
-- Status-Pipeline mit klar definierten Phasen: Neu → Angebot erstellt → Bestätigt → In Beschaffung → In Vorbereitung → Durchgeführt → Abgerechnet.
+- Status-Pipeline mit klar definierten Phasen: Neu → Geprüft → AngebotErstellt → Bestätigt → InBeschaffung → InVorbereitung → Durchgeführt → Abgerechnet.
 - Detailansicht je Auftrag mit allen Stammdaten, Originalanfrage und Bearbeitungshistorie.
 - Bearbeitung aller Felder mit Validierung (z. B. Personenanzahl > 0, Datum in der Zukunft).
 

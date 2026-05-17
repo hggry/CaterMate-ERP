@@ -3,7 +3,13 @@
     "allow": [
       "Bash(git mv *)",
       "Bash(git rm *)",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(dotnet new *)",
+      "Bash(dotnet sln *)",
+      "Bash(dotnet add *)",
+      "Bash(dotnet *)",
+      "Bash(curl -s -X POST http://localhost:5000/api/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin_dev_password\"}')",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }

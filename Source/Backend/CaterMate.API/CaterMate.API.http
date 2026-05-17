@@ -1,0 +1,6 @@
+@CaterMate.API_HostAddress = http://localhost:5049
+
+GET {{CaterMate.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

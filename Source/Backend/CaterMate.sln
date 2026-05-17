@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaterMate.API", "CaterMate.API\CaterMate.API.csproj", "{3591FFBA-F6A1-435F-9F5A-ACB701BF2D58}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaterMate.BusinessLogic", "CaterMate.BusinessLogic\CaterMate.BusinessLogic.csproj", "{AB24ABA3-E108-4832-A096-73A8839BC7DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaterMate.Db", "CaterMate.Db\CaterMate.Db.csproj", "{12CE3F5C-881A-4A71-A74A-3AC8E0194371}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaterMate.DTOs", "CaterMate.DTOs\CaterMate.DTOs.csproj", "{DA9A47FD-56B4-4066-BBBA-CF4049C4EB92}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3591FFBA-F6A1-435F-9F5A-ACB701BF2D58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3591FFBA-F6A1-435F-9F5A-ACB701BF2D58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3591FFBA-F6A1-435F-9F5A-ACB701BF2D58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3591FFBA-F6A1-435F-9F5A-ACB701BF2D58}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB24ABA3-E108-4832-A096-73A8839BC7DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB24ABA3-E108-4832-A096-73A8839BC7DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB24ABA3-E108-4832-A096-73A8839BC7DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB24ABA3-E108-4832-A096-73A8839BC7DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12CE3F5C-881A-4A71-A74A-3AC8E0194371}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12CE3F5C-881A-4A71-A74A-3AC8E0194371}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12CE3F5C-881A-4A71-A74A-3AC8E0194371}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12CE3F5C-881A-4A71-A74A-3AC8E0194371}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA9A47FD-56B4-4066-BBBA-CF4049C4EB92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA9A47FD-56B4-4066-BBBA-CF4049C4EB92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA9A47FD-56B4-4066-BBBA-CF4049C4EB92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA9A47FD-56B4-4066-BBBA-CF4049C4EB92}.Release|Any CPU.Build.0 = Release|Any CPU
+EndGlobalSection
+EndGlobal
