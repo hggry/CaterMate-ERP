@@ -30,29 +30,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_HTTP_PORTS: "8080"
-      ConnectionStrings__DefaultConnection: >-
-        Server=db;Port=3306;Database=${DB_NAME};
-        User ID=${DB_USER};Password=${DB_PASSWORD};
-        CharSet=utf8mb4;
+      ConnectionStrings__DefaultConnection: "Server=db;Port=3306;Database=${DB_NAME};User ID=${DB_USER};Password=${DB_PASSWORD};CharSet=utf8mb4;"
     ports:
       - "${BACKEND_PORT}:8080"
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - catermate_net
-
-  frontend:
-    build:
-      context: ../..
-      dockerfile: Source/Docker/frontend/Dockerfile
-    env_file: .env.dev
-    environment:
-      VITE_API_BASE_URL: http://localhost:${BACKEND_PORT}
-    ports:
-      - "${FRONTEND_PORT}:80"
-    depends_on:
-      - backend
     networks:
       - catermate_net
 
@@ -76,7 +59,7 @@ services:
 
   n8n:
     build:
-      context: ../../ai-service
+      context: ../ai-service
     restart: always
     env_file: .env.dev
     environment:
@@ -96,7 +79,7 @@ services:
       - "${N8N_PORT}:5678"
     volumes:
       - n8n_data:/root/.n8n
-      - ../../ai-service/workflows:/workflows
+      - ../ai-service/workflows:/workflows
     depends_on:
       n8n_postgres:
         condition: service_healthy
