@@ -4,6 +4,9 @@ volumes:
   db_storage:
   n8n_storage:
 
+networks:
+  catermate:
+
 services:
   postgres:
     image: postgres:16
@@ -19,6 +22,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - catermate
 
   n8n:
     build: .
@@ -32,6 +37,7 @@ services:
       - DB_POSTGRESDB_PASSWORD=mein_sicheres_passwort
       - N8N_ENCRYPTION_KEY=bitte_aendern_langer_zufallsstring
       - GENERIC_TIMEZONE=Europe/Vienna
+      - WEBHOOK_URL=${WEBHOOK_URL}
     ports:
       - "5678:5678"
     volumes:
@@ -40,3 +46,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - catermate
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: always
+    command: http n8n:5678 --domain=sequence-amusable-sash.ngrok-free.dev
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    depends_on:
+      - n8n
+    networks:
+      - catermate

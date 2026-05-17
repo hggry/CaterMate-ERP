@@ -16,3 +16,11 @@ Bevor Änderungen an n8n auf GitHub gepusht werden, muss der aktuelle Stand aus 
 
 docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workflows.json
 
+
+
+\##🗄️Befehle für PostgreSQL Datenbank:
+
+Zur DB im Terminal navigieren: 'docker exec -it ai-service-postgres-1 psql -U n8n -d n8n'
+
+state der Anfrage in Tabelle Konversation selektieren: 'SELECT state FROM konversationen;'
+
