@@ -76,7 +76,7 @@ Starke Erfolgskriterien ermöglichen eigenständiges Iterieren. Schwache Kriteri
 
 CaterMate-ERP ist ein Fachhochschul-Projekt, das einen vollständigen End-to-End-Flow im Catering-Bereich demonstriert:
 
-**Catering-Anfrage (WhatsApp) → KI-Datenerfassung → Auftrags-Pipeline → Angebot → Einkaufsliste → Rechnung**
+**Catering-Anfrage (Telegram) → KI-Datenerfassung → Auftrags-Pipeline → Angebot → Einkaufsliste → Rechnung**
 
 Die UI-Sprache ist ausschließlich **Deutsch** (keine Mehrsprachigkeit im MVP).
 
@@ -93,8 +93,8 @@ Die UI-Sprache ist ausschließlich **Deutsch** (keine Mehrsprachigkeit im MVP).
 | Datenbank | MySQL 8, Zugriff via Dapper (Raw SQL) |
 | Frontend | Vue 3 + PrimeVue + Vite (Composition API mit `<script setup>`) |
 | PDF | QuestPDF |
-| KI | TBD (Integration in BusinessLogic-Layer) |
-| WhatsApp | WhatsApp Business API / Webhook |
+| KI-Orchestrierung | n8n 2.20.9 + Google Gemini API |
+| Messaging-Kanal | Telegram Bot API / Webhook |
 
 ## Architektur
 
@@ -112,9 +112,9 @@ Das System folgt einem Pipeline-Modell, das auf der zentralen **Auftrag**-Entit�
 
 ### KI-Integrationspunkte
 
-1. **WhatsApp-Bot** — gesprächsbasierte Anfragenerfassung via OpenAI; extrahiert Eventdatum, Uhrzeit, Personenanzahl, Eventtyp, Ort, Budget, Sonderwünsche, Allergien. Legt Auftrag im Status `Neu` an.
+1. **Telegram-Bot** — gesprächsbasierte Anfragenerfassung via Google Gemini API; extrahiert Eventdatum, Uhrzeit, Personenanzahl, Eventtyp, Ort, Budget, Sonderwünsche, Allergien. Legt Auftrag im Status `Neu` an.
 2. **Gerichtsvorschläge** — beim Prüfen eines Auftrags schlägt die KI passende Menüartikel aus dem Katalog anhand der Kundenwünsche vor.
-3. **Eingangsrechnung (OCR)** — eingescannte Lieferantenrechnungen werden per OpenAI Vision ausgewertet; das System schlägt Einkaufspreisänderungen je Zutat vor; der User bestätigt zeilenweise.
+3. **Eingangsrechnung (OCR)** — eingescannte Lieferantenrechnungen werden per Google Gemini Vision ausgewertet; das System schlägt Einkaufspreisänderungen je Zutat vor; der User bestätigt zeilenweise.
 
 ### Fachliche Besonderheiten
 
@@ -126,7 +126,7 @@ Das System folgt einem Pipeline-Modell, das auf der zentralen **Auftrag**-Entit�
 
 ## Docker
 
-`docker compose up --build` ist der primäre Einstieg. Alle Services (Backend, Frontend, MySQL) laufen im Container. `.env.example` als Vorlage — `.env` wird nicht eingecheckt.
+`docker compose up --build` ist der primäre Einstieg. Alle Services (Backend, Frontend, MySQL, n8n) laufen im Container. `.env.example` als Vorlage — `.env` wird nicht eingecheckt.
 
 ## Git-Workflow
 

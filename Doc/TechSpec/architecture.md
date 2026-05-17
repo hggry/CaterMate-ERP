@@ -40,7 +40,8 @@ CaterMate ERP kommuniziert mit folgenden externen Akteuren:
 | Catering-Mitarbeiter | ↔ System | Verwaltet Aufträge, Stammdaten, Angebote, Rechnungen via Web-UI |
 | Telegram API | ↔ n8n | Messaging-Kanal für eingehende Kundenanfragen; n8n empfängt Webhooks |
 | Gemini API | ↔ n8n | Sprachmodell für Datenextraktion aus Kundennachrichten und OCR-Auswertung |
-| n8n (Hostinger VPS) | → Backend-API | KI-Orchestrator; schreibt strukturierte Auftragsdaten via REST ins System |
+| n8n (Docker lokal) | → Backend-API | KI-Orchestrator; schreibt strukturierte Auftragsdaten via REST ins System |
+| ngrok | → n8n | HTTPS-Tunnel — macht n8n lokal für Telegram-Webhooks erreichbar |
 
 ### Systemkontext-Diagramm
 
@@ -49,23 +50,24 @@ graph TD
     Kunde([Kunde])
     Mitarbeiter([Catering-Mitarbeiter])
 
-    subgraph CaterMate ERP ["CaterMate ERP (Docker)"]
+    subgraph Docker ["Docker Compose (lokal)"]
         Frontend["Vue 3 Frontend\n:3000"]
         Backend[".NET Web API\n:5000"]
         DB[("MySQL 8\n:3306")]
-    end
-
-    subgraph VPS ["Hostinger VPS"]
-        n8n["n8n Orchestrator\n:5678"]
+        n8n_pg[("PostgreSQL 16\nn8n intern")]
+        n8n["n8n 2.20.9\n:5678"]
+        ngrok["ngrok\nHTTPS-Tunnel"]
     end
 
     TelegramAPI(["Telegram API"])
     Gemini(["Gemini API"])
 
     Kunde -->|"Telegram-Nachricht"| TelegramAPI
-    TelegramAPI -->|"Webhook (HTTPS)"| n8n
+    TelegramAPI -->|"Webhook (HTTPS)"| ngrok
+    ngrok -->|"HTTP"| n8n
     n8n <-->|"Completions (HTTPS)"| Gemini
     n8n -->|"REST POST /api/orders"| Backend
+    n8n --- n8n_pg
     Backend -->|SQL| DB
     Mitarbeiter -->|Browser| Frontend
     Frontend -->|"REST (HTTPS)"| Backend
@@ -92,7 +94,8 @@ graph TD
 | Datenbankzugriff | Dapper (Raw SQL) | Direkte Kontrolle über SQL-Queries; kein ORM-Overhead; transparent und testbar |
 | Datenbank | MySQL 8 | Weit verbreitet, Docker-freundlich; für das relationale Datenmodell vollständig ausreichend |
 | PDF-Generierung | QuestPDF | Code-first PDF-Erstellung in C#; kein externer Template-Server notwendig |
-| KI-Orchestrierung | n8n | KI-Workflows visuell änderbar ohne Backend-Redeployment; klar getrennte Verantwortlichkeit |
+| KI-Orchestrierung | n8n 2.20.9 | KI-Workflows visuell änderbar ohne Backend-Redeployment; klar getrennte Verantwortlichkeit |
+| Messaging-Kanal | Telegram Bot API | Eingehende Kundenanfragen via Webhook; ngrok tunnelt lokal |
 | Containerisierung | Docker + Docker Compose | Einheitliche Entwicklungsumgebung für alle Teammitglieder |
 
 ---
@@ -113,14 +116,15 @@ graph LR
         DB_Proj["CaterMate.Db"]
         DTOs["CaterMate.DTOs"]
         MySQL[("MySQL 8")]
-    end
-
-    subgraph VPS ["Hostinger VPS"]
-        n8n["n8n Orchestrator"]
+        n8n["n8n 2.20.9"]
+        n8n_pg[("PostgreSQL 16\nn8n intern")]
+        ngrok["ngrok"]
     end
 
     FE -->|REST| API
     n8n -->|"REST POST"| API
+    ngrok -->|HTTP| n8n
+    n8n --- n8n_pg
     API --> BL
     API --> DTOs
     BL --> DB_Proj
@@ -215,13 +219,25 @@ public class OrderRepository
 
 ---
 
-#### 7. n8n (Hostinger VPS) — Externer KI-Orchestrator
+#### 7. n8n-Stack (Docker Compose) — KI-Orchestrator
 
-**Verantwortlich für:** Telegram-Bot-Integration (Webhook-Empfang und Antwort), Gesprächsführung mit dem Kunden, Datenextraktion via Gemini, OCR-Workflow für Lieferantenrechnungen. Sendet strukturierte Daten via REST an das CaterMate Backend.
+Der n8n-Stack besteht aus drei Containern:
+
+| Container | Image / Build | Aufgabe |
+|-----------|--------------|---------|
+| `n8n` | Custom (`ai-service/Dockerfile`), n8n 2.20.9 | Workflow-Engine; Port `N8N_PORT` (5678) |
+| `n8n_postgres` | `postgres:16` | n8n-eigene Datenbank (getrennt von MySQL) |
+| `ngrok` | `ngrok/ngrok:latest` | HTTPS-Tunnel — macht n8n für Telegram-Webhooks erreichbar |
+
+**n8n verantwortlich für:** Telegram-Bot-Integration (Webhook-Empfang und Antwort), Gesprächsführung mit dem Kunden, Datenextraktion via Gemini, OCR-Workflow für Lieferantenrechnungen. Sendet strukturierte Daten via REST an das CaterMate Backend.
 
 **Nicht verantwortlich für:** Datenhaltung, fachliche Berechnungen, PDF-Generierung.
 
 **Schnittstelle zum Backend:** `POST /api/orders` mit extrahiertem Auftrags-JSON.
+
+**Workflows:** Werden aus `ai-service/workflows/` in den Container gemountet (`/workflows`). Export via `ai-service/export_workflows.bat`.
+
+**Lokaler Erstzugang:** n8n-Admin-Login mit `N8N_USER` / `N8N_PASSWORD` aus `.env.dev`.
 
 ---
 
@@ -233,7 +249,7 @@ public class OrderRepository
 sequenceDiagram
     actor Kunde
     participant TG as Telegram API
-    participant n8n as n8n (Hostinger VPS)
+    participant n8n as n8n (Docker lokal)
     participant Gemini as Gemini API
     participant API as CaterMate.API
     participant BL as BusinessLogic
@@ -293,16 +309,18 @@ sequenceDiagram
 
 ```mermaid
 graph TB
-    subgraph local ["Local Docker Compose"]
-        FE_C["Frontend Container\nVue 3 + Vite\n:3000"]
-        BE_C[".NET Backend Container\nASP.NET Core\n:5000"]
-        DB_C["MySQL Container\n:3306"]
+    subgraph local ["Docker Compose (lokal)"]
+        FE_C["frontend\nVue 3 + Nginx\n:3000"]
+        BE_C["backend\nASP.NET Core\n:5000"]
+        DB_C["db\nMySQL 8\n:3306"]
+        n8n_PG["n8n_postgres\nPostgreSQL 16"]
+        n8n_C["n8n\nn8n 2.20.9\n:5678"]
+        ngrok_C["ngrok\nHTTPS-Tunnel"]
         FE_C -->|"REST :5000"| BE_C
         BE_C -->|"TCP :3306"| DB_C
-    end
-
-    subgraph vps ["Hostinger VPS"]
-        n8n_S["n8n\n:5678"]
+        n8n_C -->|"TCP :5432"| n8n_PG
+        n8n_C -->|"REST :5000"| BE_C
+        ngrok_C -->|"HTTP :5678"| n8n_C
     end
 
     subgraph ext ["External Services"]
@@ -310,9 +328,16 @@ graph TB
         Gemini_API["Gemini API"]
     end
 
-    TG_API -->|"Webhook HTTPS"| n8n_S
-    n8n_S <-->|"HTTPS"| Gemini_API
-    n8n_S -->|"REST HTTPS → :5000"| BE_C
+    TG_API -->|"Webhook HTTPS"| ngrok_C
+    n8n_C <-->|"HTTPS"| Gemini_API
 ```
 
-**Umgebungsvariablen:** Alle Secrets (DB-Passwort, Gemini-API-Key, Telegram-Bot-Token, n8n-Webhook-Secret) werden via `.env` übergeben. `.env.example` ist eingecheckt und dokumentiert alle Variablen. `.env` wird nie eingecheckt.
+**Umgebungsvariablen:** Alle Secrets (DB-Passwort, Gemini-API-Key, Telegram-Bot-Token, n8n-Zugangsdaten, ngrok-Authtoken) werden via `.env.dev` übergeben. `.env.dev` wird **nicht** eingecheckt — `.env.example` dient als Vorlage.
+
+**Wichtig beim Start:** Docker Compose liest für Variable-Substitution im YAML automatisch `.env`, nicht `.env.dev`. Start daher immer mit:
+```bash
+docker compose --env-file .env.dev up --build
+```
+Alternativ: `cp .env.dev .env` einmalig ausführen (`.env` ebenfalls nicht einchecken).
+
+**ngrok-Setup:** `NGROK_AUTHTOKEN` und `WEBHOOK_URL` müssen in `.env.dev` gesetzt sein. Den Authtoken gibt es kostenlos unter [ngrok.com](https://ngrok.com). Die öffentliche Tunnel-URL (`WEBHOOK_URL`) entspricht der ngrok-Domain und muss als Telegram-Webhook registriert werden.

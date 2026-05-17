@@ -2,9 +2,9 @@
 
 ### 1.1 MVP-Funktionen
 
-**1.1.1 Whatsapp Bot (KI)**
+**1.1.1 Telegram Bot (KI)**
 
-- Whatsapp Bot der für Kunden jederzeit erreichbar ist
+- Telegram Bot der für Kunden jederzeit erreichbar ist
 - Durch Dialog werden folgende Informationen extrahiert:
     - Eventdatum, Eventuhrzeit, Personenanzahl, Eventtyp (Hochzeit/Firmenfeier/Geburtstag/Sonstiges), Eventort, Budget, Sonderwünsche und Allergien.
 

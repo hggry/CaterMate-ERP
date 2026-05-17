@@ -1,8 +1,8 @@
-### UC-01: Anfrage über WhatsApp-Bot erfassen
+### UC-01: Anfrage über Telegram-Bot erfassen
 
 - **Akteur:** Endkunde (Anfragesteller)
-- **Auslöser:** Kunde schreibt WhatsApp-Nachricht an Catering-Nummer
-- **Vorbedingung:** WhatsApp-Bot aktiv, Nummer veröffentlicht
+- **Auslöser:** Kunde schreibt Telegram-Nachricht an Catering-Bot
+- **Vorbedingung:** Telegram-Bot aktiv, Bot-Link veröffentlicht
 - **Hauptablauf:**
     1. Kunde startet Chat mit beliebiger Eingangsnachricht
     2. Bot begrüßt und fragt strukturiert ab: Eventdatum, Uhrzeit, Personenanzahl, Eventtyp, Ort, Budget, Sonderwünsche, Allergien
@@ -21,7 +21,7 @@
 - **Auslöser:** Neuer Auftrag in Pipeline-Spalte `Neu`
 - **Hauptablauf:**
     1. User öffnet Auftragsliste, navigiert zu neue Aufträge
-    2. Öffnet Detailansicht, prüft Originalanfrage aus WhatsApp
+    2. Öffnet Detailansicht, prüft Originalanfrage aus Telegram
     3. Überprüft Auftragsdaten
     4. System schlägt Gerichte (mit Kosten und Gewinn) vor, anhand der Sonderwünsche. User ordnet Gerichte zu.
     5. Speichert neuen Status →  `Geprüft`
