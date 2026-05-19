@@ -6,7 +6,8 @@
       "Bash(echo \"EXIT:$?\")",
       "PowerShell(docker volume ls *)",
       "PowerShell(docker exec docker-db-1 *)",
-      "Bash(docker exec *)"
+      "Bash(docker exec *)",
+      "PowerShell(docker exec docker-n8n-1 *)"
     ]
   }
 }

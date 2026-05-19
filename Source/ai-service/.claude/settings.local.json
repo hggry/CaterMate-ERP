@@ -3,7 +3,8 @@
     "allow": [
       "Bash(docker compose *)",
       "Bash(claude mcp *)",
-      "Bash(findstr -A 5 \"n8n\")"
+      "Bash(findstr -A 5 \"n8n\")",
+      "mcp__claude_ai_n8n__search_workflows"
     ]
   }
 }
