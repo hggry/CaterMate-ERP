@@ -19,6 +19,64 @@ main          ← stabiler Stand, nur via Pull Request
 [Allgemein: Branches und Pullrequests](https://www.google.com/search?q=Definiere+und+erkl%C3%A4re+%28einfach%29+diese+Begriffe%3A+Git+Branch%2C+Pull+Request&sca_esv=ff9f10b283514a9d&sxsrf=ANbL-n695zQUzxl0VSdVZcsGoMNGVvHtUg%3A1778516382595&udm=50&fbs=ADc_l-YGrpJMQtvjQ6h14rj-dfIrH4mwN5r0Z1FZtFNB2w3Upe2HDPC6akWpYUJBWeXXRd0BtTsaeIMiSqrSSe4pv7ADujDH1cauGJonItcT-gbDOjGE-k3R_E3Yz20UK5q0oA-jitoJYXCRnmKxoSiZXipYandrjAYsJDuwgsfHKUzDYN3CICm9BxjE1aZ5D2fjv8TCRQ30&aep=1&ntc=1&sa=X&ved=2ahUKEwjpt9jp0bGUAxWt97sIHUbyONIQ2J8OegQIEhAD&biw=1806&bih=1034&dpr=1.25&mstk=AUtExfAS-OwIvucwAKLLhlPSO5YG7a4DChHnb2r5CsFMJwbNcpFb00Z-wWnvdwBvZAAA8n0I8KOXjodUMbfWfX2UAdQallDZ7MPjnXiQsHsPBs9eZ7xxILJi8Di4wzyZiKXtx8NuYr-XsbvaukUASNYMxtsFlTfGiJaHt3NdLSvf5Ea7qsfWcHzqYLHPK1sjrHZWD_rtGAT-9-fjRkcBg3u3DZgtI53V_vLcVWlcuaTTdCZ5zOyEwMKGaEmwDPUsv3QKeCE82FbNi7N-7GB_d5GF4BfwHkkMmDq3b2TC7rnd9xUHjrkZVEkGk1zgDrhiTGk2DsuwL4LfAvMXQw&csuir=1&mtid=oQECasLUC5a79u8P1Z-J4QQ)
 
 ---
+
+## Lokales Setup (einmalig nach dem Clone)
+
+### 1. Umgebungsvariablen anlegen
+
+```powershell
+# Im Ordner Source/Docker/
+cp .env.example .env
+```
+
+Dann `.env` öffnen und die Platzhalter mit echten Werten ersetzen.
+
+> **Warum?** `.env` enthält Passwörter und Tokens — diese dürfen nie in Git landen.
+> `.env.example` ist die Vorlage ohne echte Werte, die im Repo liegt.
+> `.env` ist gitignored und bleibt ausschließlich lokal.
+
+### Welche Werte muss ich eintragen?
+
+**Einfach selbst ausdenken** — läuft nur lokal, egal was ihr schreibt:
+
+| Variable | Bedeutung |
+|---|---|
+| `DB_ROOT_PASSWORD` | MySQL Root-Passwort |
+| `DB_PASSWORD` | MySQL App-Passwort |
+| `SEED_ADMIN_PASSWORD` | Login-Passwort für die App |
+| `N8N_PASSWORD` | Passwort für das n8n-Webinterface |
+| `N8N_DB_PASSWORD` | Internes PostgreSQL-Passwort für n8n |
+
+**Einmal generieren** — muss lang und zufällig sein (min. 32 Zeichen):
+
+| Variable | Bedeutung | Wie generieren |
+|---|---|---|
+| `JWT_SECRET` | Signiert Login-Tokens | `openssl rand -hex 32` im Terminal |
+| `N8N_ENCRYPTION_KEY` | Verschlüsselt n8n-Credentials | Gleiche Methode |
+
+**Persönlicher Account erforderlich** — jeder braucht seinen eigenen:
+
+| Variable | Bedeutung | Woher |
+|---|---|---|
+| `NGROK_AUTHTOKEN` | Authentifiziert den ngrok-Tunnel | [dashboard.ngrok.com/get-started/your-authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) (kostenloser Account reicht) |
+| `WEBHOOK_URL` | Öffentliche URL des ngrok-Tunnels | Nach ngrok-Login unter „Domains" sichtbar |
+
+**Nicht ändern** — fixe Werte, die für alle gleich sind:
+`DB_NAME`, `DB_USER`, `DB_PORT`, `ASPNETCORE_ENVIRONMENT`, `BACKEND_PORT`, `FRONTEND_PORT`, `N8N_PORT`, `JWT_ISSUER`, `JWT_EXPIRY_HOURS`, `SEED_ADMIN_USERNAME`, `TIMEZONE`
+
+**Für ngrok** braucht jeder seinen persönlichen Token:
+→ [dashboard.ngrok.com/get-started/your-authtoken](https://dashboard.ngrok.com/get-started/your-authtoken)
+
+### 2. Stack starten
+
+```powershell
+# Im Ordner Source/Docker/
+docker compose up --build -d
+```
+
+> **Häufiger Fehler:** `docker compose up` schlägt fehl → fast immer fehlt die `.env`-Datei oder ein Wert ist nicht ausgefüllt.
+
+---
 ## Täglicher Workflow
 
 ```bash
