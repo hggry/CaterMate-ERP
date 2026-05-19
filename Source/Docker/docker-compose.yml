@@ -89,7 +89,7 @@ services:
   ngrok:
     image: ngrok/ngrok:latest
     restart: always
-    command: http n8n:5678 --domain=sequence-amusable-sash.ngrok-free.app
+    command: http n8n:5678 --url=sequence-amusable-sash.ngrok-free.dev
     env_file: .env.dev
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
