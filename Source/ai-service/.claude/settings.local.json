@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(claude mcp *)",
+      "Bash(findstr -A 5 \"n8n\")"
     ]
   }
 }
