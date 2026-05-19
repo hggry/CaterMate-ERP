@@ -16,6 +16,9 @@ dist/
 
 # Umgebungsvariablen
 .env
+.env.dev
+.env.local
+.env.prod
 
 # Docker
 docker-compose.override.yml

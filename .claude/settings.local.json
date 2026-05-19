@@ -11,7 +11,10 @@
       "Bash(curl -s -X POST http://localhost:5000/api/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin_dev_password\"}')",
       "Bash(python3 -m json.tool)",
       "Bash(docker exec docker-n8n-1 *)",
-      "PowerShell(docker exec docker-n8n-1 *)"
+      "PowerShell(docker exec docker-n8n-1 *)",
+      "Bash(docker exec docker-db-1 *)",
+      "PowerShell(docker exec docker-db-1 *)",
+      "Bash(docker cp *)"
     ]
   }
 }

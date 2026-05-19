@@ -3,7 +3,7 @@ services:
   db:
     build:
       context: ./db
-    env_file: .env.dev
+    env_file: .env
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
@@ -26,7 +26,7 @@ services:
     build:
       context: ../..
       dockerfile: Source/Docker/backend/Dockerfile
-    env_file: .env.dev
+    env_file: .env
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_HTTP_PORTS: "8080"
@@ -42,7 +42,7 @@ services:
   n8n_postgres:
     image: postgres:16
     restart: always
-    env_file: .env.dev
+    env_file: .env
     environment:
       POSTGRES_USER: n8n
       POSTGRES_PASSWORD: ${N8N_DB_PASSWORD}
@@ -61,7 +61,7 @@ services:
     build:
       context: ../ai-service
     restart: always
-    env_file: .env.dev
+    env_file: .env
     environment:
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: n8n_postgres
@@ -89,10 +89,8 @@ services:
   ngrok:
     image: ngrok/ngrok:latest
     restart: always
-    command: http n8n:5678 --url=sequence-amusable-sash.ngrok-free.dev
-    env_file: .env.dev
-    environment:
-      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: http n8n:5678 --domain=sequence-amusable-sash.ngrok-free.dev
+    env_file: .env
     depends_on:
       - n8n
     networks:

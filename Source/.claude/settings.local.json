@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(docker exec catermate-erp-db-1 *)",
+      "Bash(echo \"EXIT:$?\")",
+      "PowerShell(docker volume ls *)"
     ]
   }
 }
