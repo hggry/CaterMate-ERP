@@ -25,6 +25,6 @@ Zur DB im Terminal navigieren: **docker exec -it ai-service-postgres-1 psql -U n
 state der Anfrage in Tabelle Konversation selektieren: **SELECT state FROM konversationen;**
 
 ## ♾️ Mit Claude Code n8n workflows bauen:
-1. Chat öffnen in Verzeichnis: \CaterMate-ERP\Source\ai-service
-2. /mcp tippen
+1. Chat öffnen in Verzeichnis: **\CaterMate-ERP\Source\ai-service**
+2. **/mcp** tippen
 3. "claude.ai n8n" auswählen und verbinden
