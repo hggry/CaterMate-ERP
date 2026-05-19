@@ -4,7 +4,9 @@
       "Bash(docker compose *)",
       "Bash(docker exec catermate-erp-db-1 *)",
       "Bash(echo \"EXIT:$?\")",
-      "PowerShell(docker volume ls *)"
+      "PowerShell(docker volume ls *)",
+      "PowerShell(docker exec docker-db-1 *)",
+      "Bash(docker exec *)"
     ]
   }
 }
