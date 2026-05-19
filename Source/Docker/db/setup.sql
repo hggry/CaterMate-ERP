@@ -44,6 +44,9 @@ CREATE TABLE MenuItems (
     SalesPricePerPerson   DECIMAL(10,2)  NOT NULL,
     PurchaseCostPerPerson DECIMAL(10,2)  NOT NULL,
     Allergens             VARCHAR(500)   NULL,
+    Tags                  VARCHAR(500)   NULL,
+    Eignung               VARCHAR(300)   NULL,
+    Beschreibung          TEXT           NULL,
     CreatedAt             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
