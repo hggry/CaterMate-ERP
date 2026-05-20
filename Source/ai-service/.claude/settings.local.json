@@ -37,7 +37,10 @@
       "PowerShell(docker cp docker-n8n-1:/tmp/wf_cn.json \"C:\\\\Users\\\\thoma\\\\AppData\\\\Local\\\\Temp\\\\wf_cn.json\")",
       "PowerShell(python3 \"C:\\\\Users\\\\thoma\\\\AppData\\\\Local\\\\Temp\\\\fix_code_node.py\" \"C:\\\\Users\\\\thoma\\\\AppData\\\\Local\\\\Temp\\\\wf_cn.json\" \"C:\\\\Users\\\\thoma\\\\AppData\\\\Local\\\\Temp\\\\wf_cn_fixed.json\" 2>&1)",
       "PowerShell(docker cp \"C:\\\\Users\\\\thoma\\\\AppData\\\\Local\\\\Temp\\\\wf_cn_fixed.json\" docker-n8n-1:/tmp/wf_cn_fixed.json)",
-      "PowerShell(docker exec docker-n8n-1 n8n import:workflow --input=/tmp/wf_cn_fixed.json 2>&1)"
+      "PowerShell(docker exec docker-n8n-1 n8n import:workflow --input=/tmp/wf_cn_fixed.json 2>&1)",
+      "mcp__claude_ai_n8n__create_workflow_from_code",
+      "PowerShell(& \"C:\\\\Program Files\\\\Git\\\\bin\\\\git.exe\" -C \"c:\\\\Repositories\\\\CaterMate-ERP\" diff --staged)",
+      "PowerShell($git = 'C:\\\\Users\\\\thoma\\\\AppData\\\\Local\\\\GitHubDesktop\\\\app-3.5.8\\\\resources\\\\app\\\\git\\\\cmd\\\\git.exe'; & $git -C \"c:\\\\Repositories\\\\CaterMate-ERP\" status; & $git -C \"c:\\\\Repositories\\\\CaterMate-ERP\" diff HEAD --stat)"
     ]
   }
 }

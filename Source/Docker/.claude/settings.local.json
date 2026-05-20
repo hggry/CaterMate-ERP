@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec docker-db-1 *)",
+      "PowerShell(docker exec docker-db-1 *)"
+    ]
+  }
+}
