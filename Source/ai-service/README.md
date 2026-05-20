@@ -45,3 +45,8 @@ docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workf
 1. Chat öffnen in Verzeichnis: **\CaterMate-ERP\Source\ai-service**
 2. **/mcp** tippen
 3. "claude.ai n8n" auswählen und verbinden
+
+## Workflow 2 (Eingangsrechnung erfassen und Stammdaten aktualisieren)
+Testen (Windows Powershell): 
+1. Zum **Ordner wechseln**, wo Test pdf ist
+2. Befehl ausführen: **curl.exe -X POST https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check -F "file=@test_rechnung_2026_001.pdf"**
