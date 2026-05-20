@@ -20,7 +20,7 @@ docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workf
 
 ## 🗄️Befehle für PostgreSQL Datenbank:
 
- **Einträge aus einer n8n-PostgreSQL-Tabelle löschen:**
+ **Einträge (Konversationen) aus einer n8n-PostgreSQL-Tabelle löschen:**
 
   Voraussetzung: Docker läuft und die Container sind gestartet.
 
