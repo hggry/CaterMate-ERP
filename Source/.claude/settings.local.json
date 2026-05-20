@@ -7,7 +7,10 @@
       "PowerShell(docker volume ls *)",
       "PowerShell(docker exec docker-db-1 *)",
       "Bash(docker exec *)",
-      "PowerShell(docker exec docker-n8n-1 *)"
+      "PowerShell(docker exec docker-n8n-1 *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Repositories\\\\CaterMate-ERP\\\\Source\" -Directory)",
+      "Bash(Select-Object Name)",
+      "PowerShell(docker exec docker-n8n_postgres-1 *)"
     ]
   }
 }
