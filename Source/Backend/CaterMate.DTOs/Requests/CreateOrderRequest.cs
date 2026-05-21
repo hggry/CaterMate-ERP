@@ -13,4 +13,5 @@ public class CreateOrderRequest
     public decimal? Budget { get; set; }
     public string? SpecialWishes { get; set; }
     public string? Allergies { get; set; }
+    public string? DishWishes { get; set; }
 }

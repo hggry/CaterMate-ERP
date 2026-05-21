@@ -59,7 +59,8 @@ services:
 
   n8n:
     build:
-      context: ../ai-service
+      context: .
+      dockerfile: ai-service/Dockerfile
     restart: always
     env_file: .env
     environment:

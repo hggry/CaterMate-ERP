@@ -22,15 +22,15 @@ public class OrderRepository : IOrderRepository
         WHERE omi.OrderId = @OrderId";
 
     private const string Insert = @"
-        INSERT INTO Orders (CustomerId, EventDate, EventType, Location, GuestCount, Budget, SpecialWishes, Allergies, Status)
-        VALUES (@CustomerId, @EventDate, @EventType, @Location, @GuestCount, @Budget, @SpecialWishes, @Allergies, @Status);
+        INSERT INTO Orders (CustomerId, EventDate, EventType, Location, GuestCount, Budget, SpecialWishes, Allergies, DishWishes, Status)
+        VALUES (@CustomerId, @EventDate, @EventType, @Location, @GuestCount, @Budget, @SpecialWishes, @Allergies, @DishWishes, @Status);
         SELECT LAST_INSERT_ID();";
 
     private const string Update = @"
         UPDATE Orders SET
             EventDate = @EventDate, EventType = @EventType, Location = @Location,
             GuestCount = @GuestCount, Budget = @Budget, SpecialWishes = @SpecialWishes,
-            Allergies = @Allergies
+            Allergies = @Allergies, DishWishes = @DishWishes
         WHERE Id = @Id";
 
     private const string UpdateStatus = "UPDATE Orders SET Status = @Status WHERE Id = @Id";

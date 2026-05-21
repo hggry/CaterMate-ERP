@@ -65,6 +65,7 @@ CREATE TABLE Orders (
     Budget       DECIMAL(10,2)  NULL,
     SpecialWishes TEXT           NULL,
     Allergies    TEXT           NULL,
+    DishWishes   TEXT           NULL,
     Status       VARCHAR(50)    NOT NULL DEFAULT 'Neu',
     CreatedAt    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

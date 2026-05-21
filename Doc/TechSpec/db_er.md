@@ -50,6 +50,7 @@ erDiagram
         decimal Budget
         text SpecialWishes
         text Allergies
+        text DishWishes
         varchar Status
         datetime CreatedAt
         datetime UpdatedAt
@@ -241,6 +242,7 @@ Zentrale Entität. Jeder Auftrag durchläuft die Status-Pipeline.
 | Budget        | DECIMAL(10,2) | NULL                              | Kundenwunsch-Budget                     |
 | SpecialWishes | TEXT          | NULL                              | Freitext aus Telegram-Gespräch          |
 | Allergies     | TEXT          | NULL                              | Freitext aus Telegram-Gespräch          |
+| DishWishes    | TEXT          | NULL                              | Gerichtswünsche des Kunden              |
 | Status        | VARCHAR(50)   | NOT NULL, DEFAULT 'Neu'           | Gültige Werte: siehe Status-Pipeline    |
 | CreatedAt     | DATETIME      | NOT NULL, DEFAULT NOW()           |                                         |
 | UpdatedAt     | DATETIME      | NOT NULL, DEFAULT NOW() ON UPDATE |                                         |

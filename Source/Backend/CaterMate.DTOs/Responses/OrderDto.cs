@@ -13,6 +13,7 @@ public class OrderDto
     public decimal? Budget { get; set; }
     public string? SpecialWishes { get; set; }
     public string? Allergies { get; set; }
+    public string? DishWishes { get; set; }
     public string Status { get; set; } = "";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
