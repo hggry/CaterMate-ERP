@@ -14,7 +14,9 @@
       "PowerShell(docker exec docker-n8n-1 *)",
       "Bash(docker exec docker-db-1 *)",
       "PowerShell(docker exec docker-db-1 *)",
-      "Bash(docker cp *)"
+      "Bash(docker cp *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Repos\\\\CaterMate-ERP\\\\Source\\\\Backend\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)"
     ]
   }
 }

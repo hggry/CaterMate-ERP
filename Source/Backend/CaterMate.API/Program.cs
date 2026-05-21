@@ -1,5 +1,6 @@
 using System.Text;
 using BCryptNet = BCrypt.Net.BCrypt;
+using CaterMate.API.Filters;
 using CaterMate.API.Middleware;
 using CaterMate.BusinessLogic.Auth;
 using CaterMate.BusinessLogic.Menu;
@@ -40,6 +41,9 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IMenuItemService, MenuItemService>();
 builder.Services.AddScoped<IIngredientService, IngredientService>();
 
+// Filters
+builder.Services.AddScoped<N8nApiKeyAuthFilter>();
+
 // JWT auth
 var jwtSecret = config["JWT_SECRET"] ?? throw new InvalidOperationException("JWT_SECRET not configured");
 var jwtIssuer = config["JWT_ISSUER"] ?? "catermate";
@@ -79,6 +83,9 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddEndpointsApiExplorer().AddSwaggerGen();
 
 var app = builder.Build();
+
+if (string.IsNullOrWhiteSpace(config["N8N_API_KEY"]))
+    Log.Warning("N8N_API_KEY is not configured — all requests to /api/n8n/* will return 500");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseSerilogRequestLogging();

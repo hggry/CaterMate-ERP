@@ -9,6 +9,7 @@ public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepo;
     private readonly ICustomerRepository _customerRepo;
+    private readonly IMenuItemRepository _menuItemRepo;
 
     private static readonly Dictionary<string, string> ValidTransitions = new()
     {
@@ -21,10 +22,11 @@ public class OrderService : IOrderService
         ["Durchgeführt"]    = "Abgerechnet",
     };
 
-    public OrderService(IOrderRepository orderRepo, ICustomerRepository customerRepo)
+    public OrderService(IOrderRepository orderRepo, ICustomerRepository customerRepo, IMenuItemRepository menuItemRepo)
     {
         _orderRepo = orderRepo;
         _customerRepo = customerRepo;
+        _menuItemRepo = menuItemRepo;
     }
 
     public async Task<IEnumerable<OrderDto>> GetAllAsync(string? status, DateTime? from, DateTime? to)
@@ -67,6 +69,45 @@ public class OrderService : IOrderService
         };
 
         var id = await _orderRepo.CreateAsync(entity);
+        return await GetByIdAsync(id);
+    }
+
+    public async Task<OrderDto> CreateFromN8nAsync(N8nCreateOrderRequest request)
+    {
+        foreach (var item in request.OrderMenuItems)
+        {
+            var exists = await _menuItemRepo.GetByIdAsync(item.MenuItemId);
+            if (exists == null)
+                throw new KeyNotFoundException($"MenuItem {item.MenuItemId} not found");
+        }
+
+        var customerId = await _customerRepo.UpsertByPhoneAsync(request.Customer.Name, request.Customer.Tel);
+
+        var eventDate = request.Time.HasValue
+            ? request.Date.Add(request.Time.Value)
+            : request.Date;
+
+        var entity = new OrderEntity
+        {
+            CustomerId = customerId,
+            EventDate = eventDate,
+            EventType = request.EventType,
+            Location = request.Location ?? string.Empty,
+            GuestCount = request.GuestCount,
+            Budget = request.Budget,
+            DishWishes = request.DishWishes,
+            Allergies = request.Allergies,
+            Status = "Neu"
+        };
+
+        var id = await _orderRepo.CreateAsync(entity);
+
+        if (request.OrderMenuItems.Count > 0)
+        {
+            var menuItemIds = request.OrderMenuItems.Select(m => m.MenuItemId).ToArray();
+            await _orderRepo.SetMenuItemsAsync(id, menuItemIds);
+        }
+
         return await GetByIdAsync(id);
     }
 

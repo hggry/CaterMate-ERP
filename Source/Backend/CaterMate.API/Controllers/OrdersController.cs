@@ -32,7 +32,6 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost]
-    [AllowAnonymous] // TODO: n8n API-Key Auth (Option A aus backend_api.md §2.2)
     public async Task<IActionResult> Create([FromBody] CreateOrderRequest request)
     {
         var order = await _orderService.CreateAsync(request);
