@@ -7,6 +7,9 @@
 - Telegram Bot der für Kunden jederzeit erreichbar ist
 - Durch Dialog werden folgende Informationen extrahiert:
     - Eventdatum, Eventuhrzeit, Personenanzahl, Eventtyp (Hochzeit/Firmenfeier/Geburtstag/Sonstiges), Eventort, Budget, Sonderwünsche und Allergien.
+- n8n schlägt passende Menüartikel aus dem vorhandenen Katalog vor und legt den Auftrag inkl. Menüartikel-Vorauswahl im Backend an
+- Aufträge können alternativ auch direkt per Frontend ohne Telegram-Kanal angelegt werden — beide Wege sind im MVP vorgesehen
+- n8n authentifiziert sich am Backend über einen API-Key (`X-Api-Key` Header, konfiguriert via `N8N_API_KEY` Umgebungsvariable); dedizierter Endpoint: `POST /api/n8n/orders`
 
 **1.1.2 Auftragsverwaltung**
 

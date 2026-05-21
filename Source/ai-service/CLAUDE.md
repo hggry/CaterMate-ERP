@@ -45,22 +45,49 @@ Anweisungen für Claude-Sessions, die in diesem Unterordner arbeiten. **Die Root
 
 n8n erzeugt Aufträge ausschließlich über die Backend-API. **Nicht direkt in die MySQL-DB schreiben.**
 
-**Endpunkt:** `POST /api/orders`
-**Quelle:** [../Backend/CaterMate.API/Controllers/OrdersController.cs](../Backend/CaterMate.API/Controllers/OrdersController.cs) — Payload-DTO: [../Backend/CaterMate.DTOs/Requests/CreateOrderRequest.cs](../Backend/CaterMate.DTOs/Requests/CreateOrderRequest.cs)
+**Endpunkt:** `POST /api/n8n/orders`
+**Controller:** [../Backend/CaterMate.API/Controllers/N8nController.cs](../Backend/CaterMate.API/Controllers/N8nController.cs)
+**DTO:** [../Backend/CaterMate.DTOs/Requests/N8nCreateOrderRequest.cs](../Backend/CaterMate.DTOs/Requests/N8nCreateOrderRequest.cs)
 
-| Feld | Typ | Pflicht |
-|---|---|---|
-| `customerName` | string | ✅ |
-| `eventDate` | datetime (zukünftig) | ✅ |
-| `location` | string | ✅ |
-| `guestCount` | int (1–5000) | ✅ |
-| `customerPhone` | string | ⬜ |
-| `eventType` | `Hochzeit` \| `Firmenfeier` \| `Geburtstag` \| `Sonstiges` | ⬜ |
-| `budget` | decimal | ⬜ |
-| `specialWishes` | string | ⬜ |
-| `allergies` | string | ⬜ |
+**Auth:** `X-Api-Key: <N8N_API_KEY>` (Wert aus `.env` / n8n-Credential)
 
-**Auth-Hinweis:** Endpunkt aktuell `[AllowAnonymous]` mit TODO für n8n-API-Key. Workflows so bauen, dass das Hinzufügen eines API-Key-Headers eine reine Credential-Änderung ist (keine harte Verdrahtung).
+**Payload (camelCase JSON-Objekt):**
+
+```json
+{
+  "customer": { "name": "...", "tel": "+43 ..." },
+  "orderMenuItems": [
+    { "menuItemId": 10, "name": "...", "category": "...", "count": 100, "pricePerPerson": 7.00, "totalPrice": 700.00 }
+  ],
+  "guestCount": 100,
+  "budget": 3000.00,
+  "totalCosts": 2750.00,
+  "dishWishes": "...",
+  "allergies": "...",
+  "date": "2026-08-21",
+  "time": null,
+  "eventType": "Hochzeit",
+  "location": "..."
+}
+```
+
+| Feld | Typ | Pflicht | Hinweis |
+|---|---|---|---|
+| `customer.name` | string | ✅ | |
+| `customer.tel` | string | ⬜ | Kein Tel → immer neuer Customer |
+| `orderMenuItems[].menuItemId` | int | ✅ | Muss existierender Menüartikel sein → 404 bei ungültiger ID |
+| `orderMenuItems[].name/category/count/pricePerPerson/totalPrice` | diverse | ⬜ | n8n-intern, wird nicht gespeichert |
+| `guestCount` | int (1–5000) | ✅ | |
+| `budget` | decimal | ⬜ | |
+| `totalCosts` | decimal | ⬜ | Wird vom Backend ignoriert |
+| `dishWishes` | string | ⬜ | |
+| `allergies` | string | ⬜ | |
+| `date` | date (ISO 8601) | ✅ | |
+| `time` | time | ⬜ | Wird mit `date` kombiniert |
+| `eventType` | string | ⬜ | `Hochzeit` / `Firmenfeier` / `Geburtstag` / `Sonstiges` |
+| `location` | string | ⬜ | |
+
+**Response:** `201 Created` mit `OrderDto` — Status = `Neu`, Menüartikel bereits zugewiesen.
 
 ---
 

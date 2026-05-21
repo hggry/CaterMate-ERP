@@ -9,9 +9,13 @@
     3. Bot validiert Plausibilität (Datum in Zukunft, Personenanzahl > 0)
     4. Bot checkt Verfügbarkeit mit bereits geplanten Events
     5. Bot fasst Daten zusammen und lässt Kunden bestätigen
-    6. System legt neuen Auftrag im Status `Neu` an, Originalchat wird gespeichert
+    6. n8n schlägt passende Menüartikel aus dem Katalog vor (basierend auf Eventtyp, Budget, Allergien)
+    7. n8n legt Auftrag im Status `Neu` über `POST /api/n8n/orders` an — inkl. vorgeschlagener Menüartikel
+    8. Customer wird anhand der Telefonnummer gemappt: existierender Kunde → zuordnen, unbekannte Nummer → neuen Kunden anlegen
 - **Alternativablauf:** Kunde gibt unvollständige/widersprüchliche Daten → Bot fragt gezielt nach
-- **Nachbedingung:** Auftrag erscheint in Auftragsliste
+- **Nachbedingung:** Auftrag erscheint in Auftragsliste mit Status `Neu` und bereits vorausgewählten Menüartikeln
+
+> **Hinweis:** Aufträge können auch direkt per Frontend angelegt werden (ohne KI-Bot-Kanal). In diesem Fall entfallen die Schritte 6–8 — Menüartikel werden manuell in UC-02 zugeordnet.
 
 ---
 
@@ -23,8 +27,9 @@
     1. User öffnet Auftragsliste, navigiert zu neue Aufträge
     2. Öffnet Detailansicht, prüft Originalanfrage aus Telegram
     3. Überprüft Auftragsdaten
-    4. System schlägt Gerichte (mit Kosten und Gewinn) vor, anhand der Sonderwünsche. User ordnet Gerichte zu.
-    5. Speichert neuen Status →  `Geprüft`
+    4. Kam der Auftrag über Telegram: von n8n vorgeschlagene Menüartikel sind bereits zugeordnet — User prüft, ergänzt oder entfernt Gerichte nach eigenem Ermessen
+    5. Kam der Auftrag direkt per Frontend: System schlägt Gerichte (mit Kosten und Gewinn) vor, anhand der Sonderwünsche — User ordnet Gerichte zu
+    6. Speichert neuen Status → `Geprüft`
 - **Nachbedingung:** Auftrag bereit für Angebotserstellung
 
 ---
