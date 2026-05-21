@@ -59,3 +59,10 @@ docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workf
 Testen (Windows Powershell): 
 1. Zum **Ordner wechseln**, wo Test pdf ist
 2. Befehl ausführen: **curl.exe -X POST https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check -F "file=@test_rechnung_2026_001.pdf"**
+
+
+
+## Workflow 3 (Angebot an Telegram-User senden) 
+Testen:
+**curl.exe -X POST "http://localhost:5678/webhook/send-offer?konversation_id=7539208775" -F "data=@C:\Pfad\zur\datei.pdf"**
+
