@@ -83,17 +83,26 @@ Authorization: Bearer <token>
 
 ### 2.2 n8n — API-Zugang
 
-> **Offene Entscheidung (Zuständig: Thomas / AI-Team)**
->
-> Wie sich n8n am Backend authentifiziert, ist noch nicht festgelegt. Zwei Optionen stehen zur Auswahl:
->
-> **Option A — API-Key im Header (empfohlen):**
-> n8n schickt `X-Api-Key: <secret>` mit. Backend prüft gegen `N8N_API_KEY` aus `.env`. Simpel, kein Token-Refresh notwendig.
->
-> **Option B — Service-JWT:**
-> n8n führt denselben Login-Flow wie die UI durch und nutzt ein langlebiges JWT. Mehr Overhead, aber einheitliches Auth-System.
->
-> Bis zur Entscheidung: alle n8n-Endpunkte als `[AllowAnonymous]` markieren und mit einem TODO versehen.
+n8n authentifiziert sich über einen **API-Key im Request-Header**. Das Backend prüft den Key gegen die Umgebungsvariable `N8N_API_KEY`.
+
+```
+X-Api-Key: <N8N_API_KEY>
+```
+
+**Konfiguration (via `.env`):**
+
+| Variable | Beschreibung |
+|----------|-------------|
+| `N8N_API_KEY` | Gemeinsames Secret (min. 32 Zeichen) |
+
+**Verhalten bei Fehlkonfiguration:**
+
+| Situation | HTTP-Status |
+|-----------|-------------|
+| Header fehlt oder falscher Wert | `401 Unauthorized` |
+| `N8N_API_KEY` nicht in `.env` gesetzt | `500 Internal Server Error` |
+
+Alle n8n-Endpunkte liegen unter `/api/n8n/*` und werden durch den `N8nApiKeyAuthFilter` abgesichert. Standard-JWT-Auth gilt dort **nicht**.
 
 ### 2.3 CORS
 
@@ -155,13 +164,17 @@ Strukturiertes Logging via **Serilog** (Sink: Konsole + optional File).
 
 ### 5.2 Aufträge (`/api/orders`)
 
+Aufträge können über zwei Kanäle angelegt werden:
+- **Frontend** → `POST /api/orders` (JWT erforderlich)
+- **n8n / Telegram-Bot** → `POST /api/n8n/orders` (API-Key erforderlich, siehe §5.11)
+
 | Methode | Pfad | Beschreibung | Auth |
 |---------|------|-------------|------|
-| GET | `/api/orders` | Alle Aufträge (optional: `?status=Neu`) | Ja |
-| GET | `/api/orders/{id}` | Einzelner Auftrag mit Details | Ja |
-| POST | `/api/orders` | Neuen Auftrag anlegen (von n8n oder UI) | TBD (n8n-Auth) |
-| PATCH | `/api/orders/{id}` | Auftrag aktualisieren (Status, Menüartikel, Felder) | Ja |
-| DELETE | `/api/orders/{id}` | Auftrag löschen (nur Status `Neu`) | Ja |
+| GET | `/api/orders` | Alle Aufträge (optional: `?status=Neu`) | JWT |
+| GET | `/api/orders/{id}` | Einzelner Auftrag mit Details | JWT |
+| POST | `/api/orders` | Neuen Auftrag anlegen (Frontend) | JWT |
+| PATCH | `/api/orders/{id}` | Auftrag aktualisieren (Status, Menüartikel, Felder) | JWT |
+| DELETE | `/api/orders/{id}` | Auftrag löschen (nur Status `Neu`) | JWT |
 
 **Query-Parameter GET /api/orders:**
 
@@ -443,6 +456,72 @@ KI-gestützte Gerichtsvorschläge beim Prüfen eines Auftrags.
   ]
 }
 ```
+
+---
+
+### 5.11 n8n-Integration (`/api/n8n`)
+
+Dedizierter Eingangskanal für den n8n-Workflow. Auth: `X-Api-Key` Header (siehe §2.2).
+
+| Methode | Pfad | Beschreibung | Auth |
+|---------|------|-------------|------|
+| POST | `/api/n8n/orders` | Auftrag aus Telegram-Bot anlegen | API-Key |
+
+**Request-Payload `POST /api/n8n/orders`:**
+
+```json
+{
+  "customer": {
+    "name": "Ben Soundso",
+    "tel": "+43 664 123456"
+  },
+  "orderMenuItems": [
+    {
+      "menuItemId": 10,
+      "name": "Leberknödelsuppe",
+      "category": "Vorspeise",
+      "count": 100,
+      "pricePerPerson": 7.00,
+      "totalPrice": 700.00
+    }
+  ],
+  "guestCount": 100,
+  "budget": 3000.00,
+  "totalCosts": 2750.00,
+  "dishWishes": "",
+  "allergies": "",
+  "date": "2026-08-21",
+  "time": null,
+  "eventType": "Hochzeit",
+  "location": "Wien"
+}
+```
+
+**Feldübersicht:**
+
+| Feld | Typ | Pflicht | Hinweis |
+|------|-----|---------|---------|
+| `customer.name` | string | ✅ | |
+| `customer.tel` | string | ⬜ | Kein Tel → immer neuer Customer (kein Upsert) |
+| `orderMenuItems[].menuItemId` | int | ✅ | Muss existierender Menüartikel sein |
+| `orderMenuItems[].name/category/count/pricePerPerson/totalPrice` | diverse | ⬜ | n8n-intern, wird nicht gespeichert |
+| `guestCount` | int (1–5000) | ✅ | |
+| `budget` | decimal | ⬜ | |
+| `totalCosts` | decimal | ⬜ | Wird ignoriert — Backend berechnet Kosten selbst |
+| `dishWishes` | string | ⬜ | |
+| `allergies` | string | ⬜ | |
+| `date` | date (ISO 8601) | ✅ | |
+| `time` | time | ⬜ | Wird mit `date` kombiniert wenn vorhanden |
+| `eventType` | string | ⬜ | z.B. `Hochzeit`, `Firmenfeier`, `Geburtstag`, `Sonstiges` |
+| `location` | string | ⬜ | |
+
+**Response `201 Created`:** `OrderDto` (siehe §5.2), Status = `Neu`, MenuItems bereits zugewiesen.
+
+**Fehler:**
+- `400` — Pflichtfelder fehlen oder `guestCount` außerhalb 1–5000
+- `401` — Fehlender oder falscher `X-Api-Key`
+- `404` — Ungültige `menuItemId` (Menüartikel existiert nicht)
+- `500` — `N8N_API_KEY` nicht in `.env` konfiguriert
 
 ---
 
