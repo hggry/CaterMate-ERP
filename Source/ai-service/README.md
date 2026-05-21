@@ -64,5 +64,5 @@ Testen (Windows Powershell):
 
 ## Workflow 3 (Angebot an Telegram-User senden) 
 Testen:
-**curl.exe -X POST "http://localhost:5678/webhook/send-offer?konversation_id=7539208775" -F "data=@C:\Pfad\zur\datei.pdf"**
-
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/send-offer?konversation_id=7539208775" -F "data=@C:\Users\thoma\Name der pdf.pdf"
+{"message":"Workflow was started"}**
