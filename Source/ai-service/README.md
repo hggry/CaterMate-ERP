@@ -20,7 +20,7 @@ docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workf
 
 ## 🗄️Befehle und Infos zur PostgreSQL Datenbank:
 
- **Einträge (Konversationen) aus einer n8n-PostgreSQL-Tabelle löschen:**
+ ### Einträge (Konversationen) aus einer n8n-PostgreSQL-Tabelle löschen:
 
   Voraussetzung: Docker läuft und die Container sind gestartet.
 
@@ -41,15 +41,19 @@ docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workf
   - psql -U n8n -d n8n — öffnet eine PostgreSQL-Session als User n8n in der Datenbank n8n
   - -c "..." — führt das SQL-Statement direkt aus (ohne interaktive Shell)
 
-**Detailinfos zur Spalte "status"**
+### Detailinfos zur Spalte "status"
   - Typ: VARCHAR(50), NOT NULL
   - Default: 'chatting'
   - Valide Werte: chatting, offer_in_making, offer_sent, offer_accepted, offer_rejected (per CHECK-Constraint)
+
+    
 
 ## ♾️ Mit Claude Code n8n workflows bauen:
 1. Chat öffnen in Verzeichnis: **\CaterMate-ERP\Source\ai-service**
 2. **/mcp** tippen
 3. "claude.ai n8n" auswählen und verbinden
+
+   
 
 ## Workflow 2 (Eingangsrechnung erfassen und Stammdaten aktualisieren)
 Testen (Windows Powershell): 
