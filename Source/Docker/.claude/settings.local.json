@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(docker exec docker-db-1 *)",
-      "PowerShell(docker exec docker-db-1 *)"
+      "PowerShell(docker exec docker-db-1 *)",
+      "PowerShell(docker compose ps *)",
+      "PowerShell(docker info *)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Tee-Object *)",
+      "PowerShell(Read-Host *)",
+      "PowerShell(docker exec docker-n8n_postgres-1 *)"
     ]
   }
 }
