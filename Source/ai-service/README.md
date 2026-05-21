@@ -14,7 +14,7 @@ Bevor Änderungen an n8n auf GitHub gepusht werden, muss der aktuelle Stand aus 
 
 
 
-docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workflows.json
+**docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workflows.json**
 
 
 
