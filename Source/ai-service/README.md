@@ -1,113 +1,47 @@
-# 🤖 AI-Service (n8n Setup)
+# 🤖 AI-Service (n8n)
 
+n8n-basierte KI-Orchestrierungsschicht von CaterMate-ERP. Hier laufen die Workflows, die Telegram-Anfragen aufnehmen, mit Gemini/Claude Daten extrahieren, Eingangsrechnungen analysieren und Angebote als PDF an Kunden zustellen.
 
+## 📚 Dokumentation
 
-Dieses Verzeichnis enthält die n8n-Infrastruktur für lokale Entwicklung.
+| Datei | Inhalt |
+|---|---|
+| [docs/workflows.md](docs/workflows.md) | Detaillierte Beschreibung der 3 Workflows mit Mermaid-Diagrammen, Trigger-URLs, Datenflüssen und Integrationspunkten. |
+| [docs/system-prompts.md](docs/system-prompts.md) | Dokumentation der KI-Systemprompts (Gemini Slot-Filling, Claude Menü-Agent, Claude PDF-Analyse). |
+| [docs/testing.md](docs/testing.md) | Strukturierte Test-Rezepte für alle 3 Workflows (DB-Checks, Reset-Befehle, curl-Calls). |
 
+## 🚀 Schnellstart
 
+### Docker starten
+Vom Repo-Root (`CaterMate-ERP/`):
+```powershell
+cd Source/Docker
+docker compose up --build
+```
 
-## 💾 Workflows exportieren (Vor dem Git-Commit)
+n8n läuft anschließend auf `http://localhost:5678`. Externer Zugriff (für Telegram- und Backend-Webhooks) erfolgt über ngrok — die aktuelle URL siehst du in der n8n-UI an jedem Webhook-Node.
 
-Bevor Änderungen an n8n auf GitHub gepusht werden, muss der aktuelle Stand aus der Container-Datenbank in den lokalen Ordner exportiert werden. Führe dazu folgenden Befehl in diesem Ordner aus:
+### Mit Claude Code n8n-Workflows bauen
+1. Chat in diesem Verzeichnis öffnen: `Source/ai-service`
+2. `/mcp` tippen
+3. `claude.ai n8n` auswählen und verbinden
 
+Danach hat Claude Zugriff auf die n8n-MCP-Tools (search_workflows, get_workflow_details, update_workflow, …). Siehe auch [CLAUDE.md](CLAUDE.md) für die n8n-spezifischen Konventionen.
 
+## 💾 Workflows exportieren (vor jedem Git-Commit)
 
+Workflows leben in der lokalen n8n-Postgres-DB des Containers. **Vor jedem Commit** in dieses Repo exportieren, sonst sieht der Reviewer keine Änderungen:
 
+```powershell
+docker compose exec n8n n8n export:workflow --all --output=/workflows/all_workflows.json
+```
 
-**docker compose exec n8n n8n export:workflow --all --output=/workflows/all\_workflows.json**
+Oder per Skript: [export_workflows.bat](export_workflows.bat). Danach `git add workflows/all_workflows.json` und commit.
 
+## 🔧 Wichtige Pfade
 
-
-## 🗄️Befehle und Infos zur PostgreSQL Datenbank (wichtig zum testen für Workflow 1):
-
- ### Einträge (Konversationen) aus einer n8n-PostgreSQL-Tabelle löschen:
-
-  Voraussetzung: Docker läuft und die Container sind gestartet.
-
-  1. In das Docker-Verzeichnis wechseln:
-  **cd "C:\Repositories\CaterMate-ERP\Source\Docker"**
-
-  2. Einträge vor dem Löschen prüfen (optional, aber empfohlen):
-  **docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT COUNT(*) FROM konversationen;"**
-
-  3. Alle Einträge löschen:
-  **docker compose exec n8n_postgres psql -U n8n -d n8n -c "DELETE FROM konversationen;"**
-
-  4. Löschen bestätigen:
-  **docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT COUNT(*) FROM konversationen;"**
-
-  Erklärung der Befehlsbestandteile:
-  - docker compose exec n8n_postgres — führt einen Befehl im laufenden Container n8n_postgres aus
-  - psql -U n8n -d n8n — öffnet eine PostgreSQL-Session als User n8n in der Datenbank n8n
-  - -c "..." — führt das SQL-Statement direkt aus (ohne interaktive Shell)
-
-### Detailinfos zur Spalte "status"
-  - Typ: VARCHAR(50), NOT NULL
-  - Default: 'chatting'
-  - Valide Werte: chatting, offer_in_making, offer_sent, offer_accepted, offer_rejected (per CHECK-Constraint)
-
-    
-
-## ♾️ Mit Claude Code n8n workflows bauen:
-1. Chat öffnen in Verzeichnis: **\CaterMate-ERP\Source\ai-service**
-2. **/mcp** tippen
-3. "claude.ai n8n" auswählen und verbinden
-
-   
-## Workflow 2 (Eingangsrechnung erfassen und Stammdaten aktualisieren)
-Testen (Windows Powershell): 
-
-### 1. Tabellen-Inhalt prüfen
-Ingredients (inkl. Counter): 
-**docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "SELECT Id, Name, Unit, PurchasePricePerUnit, consecutive_over_count FROM Ingredients ORDER BY Id;"**
-
-IncomingInvoiceSuggestions (neueste zuerst):
-**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, IncomingInvoiceId, IngredientId, CurrentPrice, SuggestedPrice, Accepted FROM IncomingInvoiceSuggestions ORDER BY Id DESC;"**
-
-Check rows with:
-**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT COUNT(*) AS row_count FROM IncomingInvoiceSuggestions;"**
-
-
-### 2. Counter zurücksetzen (ohne Zutaten zu löschen)
-**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "UPDATE Ingredients SET consecutive_over_count = 0;"**
-Setzt den Zähler für alle Zutaten auf 0 — die Zutaten selbst bleiben unverändert.
-
-### 3. PDFs an den Workflow senden (Backend-Simulation)
-⚠️ Voraussetzung, sonst klappt es nicht:
-
-Eine IncomingInvoices-Zeile muss existieren (FK-Constraint):
-
-**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending'), ('test_rechnung_2026_006.pdf', 'Pending'); SELECT Id, FilePath FROM IncomingInvoices ORDER BY Id;"**
-
-status checken:
-**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, FilePath, Status, CreatedAt, ProcessedAt FROM IncomingInvoices ORDER BY Id DESC;"**
-
-
-### 4. Zum **Ordner wechseln**, wo Test pdf ist
-
-### 5. Rechnung + ID mit diesen Befehl an workflow senden: 
-
-Pro Aufruf eine PDF mit der zugehörigen incomingInvoiceId. Annahme: IncomingInvoices-Zeilen haben die IDs 1, 2, 3, … (was bei einer leeren Tabelle der Fall ist).
-
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_001.pdf" -F "incomingInvoiceId=1"**
-
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=2"**
-
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=3"**
-
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=4"**
-
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=5"**
-
-## Expected Outcome: 
-Rechnung 1 (Alpin Frisch KG) — Avocado & Basmatireis Count auf 2, Schweinskragen Count auf 1. Keine Email.
-Rechnung 2 (Südland Großhandel) — Avocado & Basmatireis Count auf 3, Paprika & Rindsnacken starten. Keine Email.
-Rechnung 3 (Frisch & Fein) — Avocado & Basmatireis Count auf 4, Kokosmilch auf 2. Keine Email.
-Rechnung 4 (Bio-Markt Österreich) — Avocado und Basmatireis erreichen Count 5 → 2 Preisvorschlags-Emails! Forellenfilet resettet auf 0.
-Rechnung 5 (Gastro-Depot Wien) — Avocado weiter auf 6, Basmatireis resettet auf 0 (nur +4%), Trüffelöl → Email unbekannte Zutat.
-
-
-## Workflow 3 (Angebot an Telegram-User senden) 
-Testen:
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/send-offer?konversation_id=7539208775" -F "data=@C:\Users\thoma\Name der pdf.pdf"
-{"message":"Workflow was started"}**
+- **Workflows (Quelle der Wahrheit):** Live-n8n-Instanz, bearbeitet via n8n-mcp.
+- **Workflows (Git-Export):** [workflows/all_workflows.json](workflows/all_workflows.json) — Export-Artefakt, **nicht** direkt bearbeiten.
+- **DB-Schema:** [../Docker/db/setup.sql](../Docker/db/setup.sql) — MySQL-Tabellen (Ingredients, IncomingInvoices, IncomingInvoiceSuggestions, MenuItems, …).
+- **Backend-API-Verträge:** [../Backend/CaterMate.API/Controllers/N8nController.cs](../Backend/CaterMate.API/Controllers/N8nController.cs) (Endpunkt für Workflow 1 → Backend).
+- **n8n-Konventionen:** [CLAUDE.md](CLAUDE.md) — Naming, Sprache, Out-of-Scope, Definition of Done.
