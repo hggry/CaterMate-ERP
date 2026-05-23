@@ -89,16 +89,22 @@ status checken:
 
 Pro Aufruf eine PDF mit der zugehörigen incomingInvoiceId. Annahme: IncomingInvoices-Zeilen haben die IDs 1, 2, 3, … (was bei einer leeren Tabelle der Fall ist).
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=1"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_001.pdf" -F "incomingInvoiceId=1"**
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=2"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=2"**
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=3"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=3"**
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=4"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=4"**
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_006.pdf" -F "incomingInvoiceId=5"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=5"**
 
+## Expected Outcome: 
+Rechnung 1 (Alpin Frisch KG) — Avocado & Basmatireis Count auf 2, Schweinskragen Count auf 1. Keine Email.
+Rechnung 2 (Südland Großhandel) — Avocado & Basmatireis Count auf 3, Paprika & Rindsnacken starten. Keine Email.
+Rechnung 3 (Frisch & Fein) — Avocado & Basmatireis Count auf 4, Kokosmilch auf 2. Keine Email.
+Rechnung 4 (Bio-Markt Österreich) — Avocado und Basmatireis erreichen Count 5 → 2 Preisvorschlags-Emails! Forellenfilet resettet auf 0.
+Rechnung 5 (Gastro-Depot Wien) — Avocado weiter auf 6, Basmatireis resettet auf 0 (nur +4%), Trüffelöl → Email unbekannte Zutat.
 
 
 ## Workflow 3 (Angebot an Telegram-User senden) 
