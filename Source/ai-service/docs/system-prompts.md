@@ -25,8 +25,6 @@ Führt den Gesprächsfaden mit dem Telegram-Kunden, extrahiert die Anfrage-Pflic
 
 ### Vollständiger Prompt (System Message)
 
-<!-- PROMPT: Workflow 1 — Gemini Slot-Filling — hier den aktuellen Wortlaut aus dem n8n-Knoten "Message a model" einfügen -->
-
 ```text
 # ROLLE UND ZWECK
 Du bist der freundliche Assistent des Catering-Services "CaterMate". Deine EINZIGE 
@@ -539,10 +537,23 @@ REGELN:
 
 Wird pro Anfrage dynamisch zusammengebaut. Inhalt: Kundenname, Anlass, Datum, Personenanzahl, Gesamtbudget, verfügbares Menübudget, Ort, Speisewünsche, Allergien, sonstige Wünsche. Endet mit der Anweisung, zuerst den Katalog per Tool abzufragen.
 
-<!-- PROMPT: Workflow 1 — Claude Menü-Agent — User-Prompt-Template aus dem Feld "text" des Agent-Knotens einfügen -->
 
 ```text
-[Platzhalter — bitte aktuelles User-Prompt-Template einfügen]
+Erstelle eine Menue-Empfehlung fuer folgende Catering-Anfrage:
+
+Kunde: {{ $('Parse LLM output to JSON').item.json.state.kunde.telegram_name }}
+Anlass: {{ $('Parse LLM output to JSON').item.json.state.anfrage.anlass }}
+Datum: {{ $('Parse LLM output to JSON').item.json.state.anfrage.datum_text }}
+Personenanzahl: {{ $('Parse LLM output to JSON').item.json.state.anfrage.personenanzahl }}
+Gesamtbudget: {{ $('Parse LLM output to JSON').item.json.state.anfrage.budget }} EUR
+Verfuegbares Menubudget (nach Abzug EUR {{ $('Prepare Budget').item.json.pauschale }} Verwaltungspauschale): {{ $('Prepare Budget').item.json.menuBudget }} EUR
+Maximaler Gesamtpreis pro Person (Menues): {{ $('Prepare Budget').item.json.maxBudgetPerPerson.toFixed(2) }} EUR
+Ort: {{ $('Parse LLM output to JSON').item.json.state.anfrage.ort }}
+Speisenwuensche: {{ $('Parse LLM output to JSON').item.json.state.anfrage.speisen_wuensche }}
+Allergien: {{ $('Parse LLM output to JSON').item.json.state.anfrage.allergien }}
+Sonstige Wuensche: {{ $('Parse LLM output to JSON').item.json.state.anfrage.sonstige_wuensche }}
+
+Rufe zuerst den Menuekatalog mit dem Tool ab, dann erstelle die Empfehlung.
 ```
 
 ---
