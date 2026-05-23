@@ -62,18 +62,25 @@ Ingredients (inkl. Counter):
 **docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "SELECT Id, Name, Unit, PurchasePricePerUnit, consecutive_over_count FROM Ingredients ORDER BY Id;"**
 
 IncomingInvoiceSuggestions (neueste zuerst):
-**docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "SELECT Id, IncomingInvoiceId, IngredientId, CurrentPrice, SuggestedPrice, Accepted FROM IncomingInvoiceSuggestions ORDER BY Id DESC;"**
+**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, IncomingInvoiceId, IngredientId, CurrentPrice, SuggestedPrice, Accepted FROM IncomingInvoiceSuggestions ORDER BY Id DESC;"**
+
+Check rows with:
+**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT COUNT(*) AS row_count FROM IncomingInvoiceSuggestions;"**
+
 
 ### 2. Counter zurücksetzen (ohne Zutaten zu löschen)
-**docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "UPDATE Ingredients SET consecutive_over_count = 0;"**
+**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "UPDATE Ingredients SET consecutive_over_count = 0;"**
 Setzt den Zähler für alle Zutaten auf 0 — die Zutaten selbst bleiben unverändert.
 
 ### 3. PDFs an den Workflow senden (Backend-Simulation)
 ⚠️ Voraussetzung, sonst klappt es nicht:
 
-Eine IncomingInvoices-Zeile muss existieren (FK-Constraint): 
+Eine IncomingInvoices-Zeile muss existieren (FK-Constraint):
 
-**docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending'), ('test_rechnung_2026_006.pdf', 'Pending'); SELECT Id, FilePath FROM IncomingInvoices ORDER BY Id;"**
+**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending'), ('test_rechnung_2026_006.pdf', 'Pending'); SELECT Id, FilePath FROM IncomingInvoices ORDER BY Id;"**
+
+status checken:
+**docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, FilePath, Status, CreatedAt, ProcessedAt FROM IncomingInvoices ORDER BY Id DESC;"**
 
 
 ### 4. Zum **Ordner wechseln**, wo Test pdf ist
