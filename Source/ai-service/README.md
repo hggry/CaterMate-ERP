@@ -89,15 +89,15 @@ status checken:
 
 Pro Aufruf eine PDF mit der zugehörigen incomingInvoiceId. Annahme: IncomingInvoices-Zeilen haben die IDs 1, 2, 3, … (was bei einer leeren Tabelle der Fall ist).
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=1"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=1"**
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=2"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=2"**
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=3"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=3"**
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=4"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=4"**
 
-**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_006.pdf" -F "incomingInvoiceId=5"**
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_006.pdf" -F "incomingInvoiceId=5"**
 
 
 
