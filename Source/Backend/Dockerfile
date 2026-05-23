@@ -3,7 +3,7 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY Source/Backend/ ./
+COPY Backend/ ./
 RUN dotnet restore CaterMate.sln
 RUN dotnet publish CaterMate.API/CaterMate.API.csproj -c Release -o /app/publish --no-restore
 

@@ -24,8 +24,8 @@ services:
 
   backend:
     build:
-      context: ../..
-      dockerfile: Source/Docker/backend/Dockerfile
+      context: .
+      dockerfile: Backend/Dockerfile
     env_file: .env
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
@@ -41,7 +41,7 @@ services:
 
   frontend:
     build:
-      context: ../Frontend
+      context: ./Frontend
       dockerfile: Dockerfile
     env_file: .env
     ports:
@@ -92,7 +92,7 @@ services:
       - "${N8N_PORT}:5678"
     volumes:
       - n8n_data:/root/.n8n
-      - ../ai-service/workflows:/workflows
+      - ./ai-service/workflows:/workflows
     depends_on:
       n8n_postgres:
         condition: service_healthy
@@ -102,7 +102,7 @@ services:
   ngrok:
     image: ngrok/ngrok:latest
     restart: always
-    command: http n8n:5678 --domain=sequence-amusable-sash.ngrok-free.dev
+    command: "http n8n:5678 --url=${NGROK_DOMAIN}"
     env_file: .env
     depends_on:
       - n8n
