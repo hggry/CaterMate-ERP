@@ -23,7 +23,7 @@ Führt den Gesprächsfaden mit dem Telegram-Kunden, extrahiert die Anfrage-Pflic
 - **Sonderfeature:** Einmalige Nachfrage nach konkretem Datum + Uhrzeit (State-Flag `datum_uhrzeit_konkret_abgefragt`).
 - **Budget-Frage:** Beim ersten Mal mit Preisorientierungs-Liste (Richtpreise pro Person netto).
 
-### Vollständiger Prompt
+### Vollständiger Prompt (System Message)
 
 <!-- PROMPT: Workflow 1 — Gemini Slot-Filling — hier den aktuellen Wortlaut aus dem n8n-Knoten "Message a model" einfügen -->
 
