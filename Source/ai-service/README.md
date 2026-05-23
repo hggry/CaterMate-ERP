@@ -54,11 +54,43 @@ Bevor Änderungen an n8n auf GitHub gepusht werden, muss der aktuelle Stand aus 
 3. "claude.ai n8n" auswählen und verbinden
 
    
-
 ## Workflow 2 (Eingangsrechnung erfassen und Stammdaten aktualisieren)
 Testen (Windows Powershell): 
-1. Zum **Ordner wechseln**, wo Test pdf ist
-2. Befehl ausführen: **curl.exe -X POST https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check -F "file=@test_rechnung_2026_001.pdf"**
+
+### 1. Tabellen-Inhalt prüfen
+Ingredients (inkl. Counter): 
+**docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "SELECT Id, Name, Unit, PurchasePricePerUnit, consecutive_over_count FROM Ingredients ORDER BY Id;"**
+
+IncomingInvoiceSuggestions (neueste zuerst):
+**docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "SELECT Id, IncomingInvoiceId, IngredientId, CurrentPrice, SuggestedPrice, Accepted FROM IncomingInvoiceSuggestions ORDER BY Id DESC;"**
+
+### 2. Counter zurücksetzen (ohne Zutaten zu löschen)
+**docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "UPDATE Ingredients SET consecutive_over_count = 0;"**
+Setzt den Zähler für alle Zutaten auf 0 — die Zutaten selbst bleiben unverändert.
+
+### 3. PDFs an den Workflow senden (Backend-Simulation)
+⚠️ Voraussetzung, sonst klappt es nicht:
+
+Eine IncomingInvoices-Zeile muss existieren (FK-Constraint): 
+
+**docker exec docker-db-1 mysql -u catermate_user -pcatermate_dev_password catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending'), ('test_rechnung_2026_006.pdf', 'Pending'); SELECT Id, FilePath FROM IncomingInvoices ORDER BY Id;"**
+
+
+### 4. Zum **Ordner wechseln**, wo Test pdf ist
+
+### 5. Rechnung + ID mit diesen Befehl an workflow senden: 
+
+Pro Aufruf eine PDF mit der zugehörigen incomingInvoiceId. Annahme: IncomingInvoices-Zeilen haben die IDs 1, 2, 3, … (was bei einer leeren Tabelle der Fall ist).
+
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=1"**
+
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=2"**
+
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=3"**
+
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=4"**
+
+**curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_006.pdf" -F "incomingInvoiceId=5"**
 
 
 
