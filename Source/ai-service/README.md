@@ -18,7 +18,7 @@ Bevor Änderungen an n8n auf GitHub gepusht werden, muss der aktuelle Stand aus 
 
 
 
-## 🗄️Befehle und Infos zur PostgreSQL Datenbank:
+## 🗄️Befehle und Infos zur PostgreSQL Datenbank (wichtig zum testen für Workflow 1):
 
  ### Einträge (Konversationen) aus einer n8n-PostgreSQL-Tabelle löschen:
 
