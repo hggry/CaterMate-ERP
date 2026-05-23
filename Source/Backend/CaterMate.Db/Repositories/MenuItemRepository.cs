@@ -43,6 +43,8 @@ public class MenuItemRepository : IMenuItemRepository
         WHERE omi.MenuItemId = @MenuItemId
           AND o.Status NOT IN ('Durchgeführt', 'Abgerechnet')";
 
+    private const string CheckIngredientInBom = "SELECT COUNT(*) FROM MenuItemIngredients WHERE IngredientId = @IngredientId";
+
     public MenuItemRepository(DapperContext context) => _context = context;
 
     public async Task<IEnumerable<MenuItemEntity>> GetAllAsync(string? category)
@@ -96,6 +98,13 @@ public class MenuItemRepository : IMenuItemRepository
     {
         using var conn = _context.CreateConnection();
         var count = await conn.ExecuteScalarAsync<int>(CheckActiveOrders, new { MenuItemId = menuItemId });
+        return count > 0;
+    }
+
+    public async Task<bool> IsIngredientInBomAsync(int ingredientId)
+    {
+        using var conn = _context.CreateConnection();
+        var count = await conn.ExecuteScalarAsync<int>(CheckIngredientInBom, new { IngredientId = ingredientId });
         return count > 0;
     }
 }

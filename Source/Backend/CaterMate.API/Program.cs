@@ -2,14 +2,22 @@ using System.Text;
 using BCryptNet = BCrypt.Net.BCrypt;
 using CaterMate.API.Filters;
 using CaterMate.API.Middleware;
+using CaterMate.BusinessLogic.Analytics;
 using CaterMate.BusinessLogic.Auth;
+using CaterMate.BusinessLogic.IncomingInvoices;
+using CaterMate.BusinessLogic.Invoicing;
 using CaterMate.BusinessLogic.Menu;
 using CaterMate.BusinessLogic.Orders;
+using CaterMate.BusinessLogic.Pdf;
+using CaterMate.BusinessLogic.Procurement;
+using CaterMate.BusinessLogic.Quotes;
 using CaterMate.BusinessLogic.Stock;
+using CaterMate.BusinessLogic.Suggestions;
 using CaterMate.Db;
 using CaterMate.Db.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using QuestPDF.Infrastructure;
 using Serilog;
 using Serilog.Events;
 
@@ -27,6 +35,8 @@ var config = builder.Configuration;
 var connectionString = config.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("DefaultConnection not configured");
 
+QuestPDF.Settings.License = LicenseType.Community;
+
 // Infrastructure
 builder.Services.AddSingleton(new DapperContext(connectionString));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -34,12 +44,25 @@ builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IMenuItemRepository, MenuItemRepository>();
 builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
+builder.Services.AddScoped<IQuoteRepository, QuoteRepository>();
+builder.Services.AddScoped<IPurchaseListRepository, PurchaseListRepository>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<IIncomingInvoiceRepository, IncomingInvoiceRepository>();
 
 // Business logic
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IMenuItemService, MenuItemService>();
 builder.Services.AddScoped<IIngredientService, IngredientService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<IQuoteService, QuoteService>();
+builder.Services.AddScoped<IPurchaseListService, PurchaseListService>();
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IIncomingInvoiceService, IncomingInvoiceService>();
+builder.Services.AddScoped<ISuggestionService, SuggestionService>();
+builder.Services.AddHttpClient();
 
 // Filters
 builder.Services.AddScoped<N8nApiKeyAuthFilter>();

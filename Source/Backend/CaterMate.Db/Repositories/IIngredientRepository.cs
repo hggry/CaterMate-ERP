@@ -8,4 +8,5 @@ public interface IIngredientRepository
     Task<IngredientEntity?> GetByIdAsync(int id);
     Task<int> CreateAsync(IngredientEntity ingredient);
     Task UpdateAsync(IngredientEntity ingredient);
+    Task DeleteAsync(int id);
 }

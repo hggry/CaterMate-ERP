@@ -1,4 +1,5 @@
 using CaterMate.BusinessLogic.Orders;
+using CaterMate.BusinessLogic.Suggestions;
 using CaterMate.DTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,8 +12,13 @@ namespace CaterMate.API.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
+    private readonly ISuggestionService _suggestionService;
 
-    public OrdersController(IOrderService orderService) => _orderService = orderService;
+    public OrdersController(IOrderService orderService, ISuggestionService suggestionService)
+    {
+        _orderService = orderService;
+        _suggestionService = suggestionService;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -50,5 +56,12 @@ public class OrdersController : ControllerBase
     {
         await _orderService.DeleteAsync(id);
         return NoContent();
+    }
+
+    [HttpGet("{id:int}/suggestions")]
+    public async Task<IActionResult> GetSuggestions(int id)
+    {
+        var result = await _suggestionService.GetMenuSuggestionsAsync(id);
+        return Ok(result);
     }
 }

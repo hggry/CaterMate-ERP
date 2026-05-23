@@ -41,4 +41,11 @@ public class IngredientsController : ControllerBase
         var item = await _ingredientService.UpdateAsync(id, request);
         return Ok(item);
     }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        await _ingredientService.DeleteAsync(id);
+        return NoContent();
+    }
 }

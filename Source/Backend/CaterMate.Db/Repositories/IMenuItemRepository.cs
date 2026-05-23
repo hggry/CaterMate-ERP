@@ -12,4 +12,5 @@ public interface IMenuItemRepository
     Task SetBillOfMaterialsAsync(int menuItemId, IEnumerable<(int IngredientId, decimal QuantityPerPerson)> items);
     Task DeleteAsync(int id);
     Task<bool> IsUsedInActiveOrderAsync(int menuItemId);
+    Task<bool> IsIngredientInBomAsync(int ingredientId);
 }

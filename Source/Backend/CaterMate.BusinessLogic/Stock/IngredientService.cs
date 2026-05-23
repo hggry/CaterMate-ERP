@@ -8,8 +8,13 @@ namespace CaterMate.BusinessLogic.Stock;
 public class IngredientService : IIngredientService
 {
     private readonly IIngredientRepository _repo;
+    private readonly IMenuItemRepository _menuItemRepo;
 
-    public IngredientService(IIngredientRepository repo) => _repo = repo;
+    public IngredientService(IIngredientRepository repo, IMenuItemRepository menuItemRepo)
+    {
+        _repo = repo;
+        _menuItemRepo = menuItemRepo;
+    }
 
     public async Task<IEnumerable<IngredientDto>> GetAllAsync()
     {
@@ -49,6 +54,17 @@ public class IngredientService : IIngredientService
 
         await _repo.UpdateAsync(existing);
         return await GetByIdAsync(id);
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        _ = await _repo.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"Ingredient {id} not found");
+
+        if (await _menuItemRepo.IsIngredientInBomAsync(id))
+            throw new InvalidOperationException("Zutat wird in einer Stückliste verwendet und kann nicht gelöscht werden.");
+
+        await _repo.DeleteAsync(id);
     }
 
     private static IngredientDto MapToDto(IngredientEntity e) =>

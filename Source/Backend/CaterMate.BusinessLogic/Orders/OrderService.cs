@@ -1,3 +1,4 @@
+using CaterMate.BusinessLogic.Procurement;
 using CaterMate.Db.Entities;
 using CaterMate.Db.Repositories;
 using CaterMate.DTOs.Requests;
@@ -10,6 +11,7 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepo;
     private readonly ICustomerRepository _customerRepo;
     private readonly IMenuItemRepository _menuItemRepo;
+    private readonly IPurchaseListService _purchaseListService;
 
     private static readonly Dictionary<string, string> ValidTransitions = new()
     {
@@ -22,11 +24,16 @@ public class OrderService : IOrderService
         ["Durchgeführt"]    = "Abgerechnet",
     };
 
-    public OrderService(IOrderRepository orderRepo, ICustomerRepository customerRepo, IMenuItemRepository menuItemRepo)
+    public OrderService(
+        IOrderRepository orderRepo,
+        ICustomerRepository customerRepo,
+        IMenuItemRepository menuItemRepo,
+        IPurchaseListService purchaseListService)
     {
         _orderRepo = orderRepo;
         _customerRepo = customerRepo;
         _menuItemRepo = menuItemRepo;
+        _purchaseListService = purchaseListService;
     }
 
     public async Task<IEnumerable<OrderDto>> GetAllAsync(string? status, DateTime? from, DateTime? to)
@@ -121,7 +128,14 @@ public class OrderService : IOrderService
             if (!ValidTransitions.TryGetValue(order.Status, out var allowed) || allowed != request.Status)
                 throw new InvalidOperationException(
                     $"Statusübergang von '{order.Status}' nach '{request.Status}' ist nicht erlaubt.");
+
             await _orderRepo.UpdateStatusAsync(id, request.Status);
+
+            if (request.Status == "Bestätigt")
+            {
+                await _purchaseListService.CreateForOrderAsync(id);
+                await _orderRepo.UpdateStatusAsync(id, "InBeschaffung");
+            }
         }
 
         if (request.AssignedMenuItemIds != null)

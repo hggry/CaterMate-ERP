@@ -18,6 +18,7 @@ public class IngredientRepository : IIngredientRepository
             Name = @Name, Unit = @Unit,
             PurchasePricePerUnit = @PurchasePricePerUnit, Category = @Category
         WHERE Id = @Id";
+    private const string Delete = "DELETE FROM Ingredients WHERE Id = @Id";
 
     public IngredientRepository(DapperContext context) => _context = context;
 
@@ -43,5 +44,11 @@ public class IngredientRepository : IIngredientRepository
     {
         using var conn = _context.CreateConnection();
         await conn.ExecuteAsync(Update, ingredient);
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        using var conn = _context.CreateConnection();
+        await conn.ExecuteAsync(Delete, new { Id = id });
     }
 }
