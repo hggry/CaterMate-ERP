@@ -6,7 +6,7 @@ Drei n8n-Workflows bilden die KI-Orchestrierungsschicht von CaterMate-ERP. Diese
 
 ## Workflow 1 — Anfrage über Telegram-Bot erfassen
 
-**ID:** `vZ98OhxobtxUn3JC` · **Status:** inaktiv · **AI-gebaut:** ✅
+**ID:** `vZ98OhxobtxUn3JC`
 
 ### Zweck
 
@@ -83,7 +83,7 @@ flowchart TD
 
 ## Workflow 2 — Eingangsrechnung: Preisüberwachung
 
-**ID:** `fB4pUHDqK8Z25Rrd` · **Status:** inaktiv · **AI-gebaut:** ✅
+**ID:** `fB4pUHDqK8Z25Rrd`
 
 ### Zweck
 
@@ -181,7 +181,7 @@ flowchart TD
 
 ## Workflow 3 — Angebot versenden
 
-**ID:** `kKC4wdFqpThxbSr2` · **Status:** aktiv · **AI-gebaut:** ✅
+**ID:** `kKC4wdFqpThxbSr2`
 
 ### Zweck
 
