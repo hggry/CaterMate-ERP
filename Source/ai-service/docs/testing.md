@@ -184,13 +184,15 @@ Verifizieren (sollte 0 Zeilen liefern):
 docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, Name, consecutive_over_count FROM Ingredients WHERE consecutive_over_count > 0;"
 ```
 
-#### Schritt 2 — Bestehende Suggestions ggf. leeren (optional, für sauberen Test)
+#### Schritt 2 — Beide Tabellen leeren und ID-Counter zurücksetzen
 
-Reihenfolge wichtig: erst die Child-Tabelle (`IncomingInvoiceSuggestions`), dann die Parent-Tabelle (`IncomingInvoices`) — sonst blockiert der FK-Constraint.
+Damit die in Schritt 3 neu angelegten Zeilen verlässlich die IDs 1–5 bekommen (auf die sich die curl-Calls in Schritt 5 stützen), beide Tabellen leeren **und** den `AUTO_INCREMENT`-Counter auf 1 zurücksetzen. Reihenfolge wichtig: erst Child (`IncomingInvoiceSuggestions`), dann Parent (`IncomingInvoices`) — sonst blockiert der FK-Constraint.
 
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "DELETE FROM IncomingInvoiceSuggestions; DELETE FROM IncomingInvoices;"
+docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "DELETE FROM IncomingInvoiceSuggestions; DELETE FROM IncomingInvoices; ALTER TABLE IncomingInvoiceSuggestions AUTO_INCREMENT = 1; ALTER TABLE IncomingInvoices AUTO_INCREMENT = 1;"
 ```
+
+Hintergrund: `DELETE FROM` setzt den `AUTO_INCREMENT`-Counter **nicht** zurück. Ohne die beiden `ALTER TABLE`-Statements würde der nächste INSERT die Id direkt hinter der letzten je vergebenen Id fortsetzen (z. B. Id=11 statt Id=1), was die hardcodierten `incomingInvoiceId=1..5` in den curl-Calls brechen würde.
 
 Inhalt beider Tabellen prüfen (sollten beide leer sein):
 ```powershell
@@ -199,20 +201,18 @@ docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_u
 
 > **Wichtig:** Bei leeren Tabellen produziert `mysql -e` **gar keinen Output** (nicht einmal Headers). Kein Output = beide Tabellen sind leer = Erfolg. Wenn etwas zurückkommt, sind dort noch Zeilen drin und das DELETE hat (z. B. wegen FK-Constraint) nicht durchgegriffen.
 
-#### Schritt 3 — `IncomingInvoices`-Zeilen anlegen (FK-Voraussetzung)
+#### Schritt 3 — `IncomingInvoices`-Zeilen neu anlegen (FK-Voraussetzung)
 
 ```powershell
 docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending'), ('test_rechnung_2026_006.pdf', 'Pending');"
 ```
 
-Verifizieren (vollständigen Inhalt der Tabelle anzeigen — zeigt die generierten IDs):
+Verifizieren (vollständigen Inhalt der Tabelle anzeigen — sollten 5 Zeilen mit IDs 1–5 sein):
 ```powershell
 docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, FilePath, Status, CreatedAt, ProcessedAt FROM IncomingInvoices ORDER BY Id;"
 ```
 
-Bei einer zuvor leeren Tabelle sind die IDs 1–5.
-
-> ⚠️ Falls die IDs nicht bei 1 starten (Tabelle war nicht leer oder AUTO_INCREMENT wurde nicht zurückgesetzt), die Werte in Schritt 5 entsprechend anpassen.
+Dank des `AUTO_INCREMENT`-Reset in Schritt 2 sind die IDs garantiert 1, 2, 3, 4, 5 — passend zu den `incomingInvoiceId`-Werten in Schritt 5.
 
 #### Schritt 4 — Workflow in n8n auf „Active" schalten
 
