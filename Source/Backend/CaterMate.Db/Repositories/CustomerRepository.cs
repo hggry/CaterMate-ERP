@@ -10,6 +10,7 @@ public class CustomerRepository : ICustomerRepository
     private const string SelectByPhone = "SELECT * FROM Customers WHERE Phone = @Phone LIMIT 1";
     private const string SelectById = "SELECT * FROM Customers WHERE Id = @Id";
     private const string Insert = "INSERT INTO Customers (Name, Phone) VALUES (@Name, @Phone); SELECT LAST_INSERT_ID();";
+    private const string Update = "UPDATE Customers SET Name = @Name, Phone = @Phone WHERE Id = @Id";
 
     public CustomerRepository(DapperContext context) => _context = context;
 
@@ -31,5 +32,11 @@ public class CustomerRepository : ICustomerRepository
     {
         using var conn = _context.CreateConnection();
         return await conn.QueryFirstOrDefaultAsync<CustomerEntity>(SelectById, new { Id = id });
+    }
+
+    public async Task UpdateAsync(int id, string name, string? phone)
+    {
+        using var conn = _context.CreateConnection();
+        await conn.ExecuteAsync(Update, new { Id = id, Name = name, Phone = phone });
     }
 }

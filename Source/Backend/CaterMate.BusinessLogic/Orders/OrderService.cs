@@ -72,6 +72,7 @@ public class OrderService : IOrderService
             Budget = request.Budget,
             SpecialWishes = request.SpecialWishes,
             Allergies = request.Allergies,
+            DishWishes = request.DishWishes,
             Status = "Neu"
         };
 
@@ -141,15 +142,21 @@ public class OrderService : IOrderService
         if (request.AssignedMenuItemIds != null)
             await _orderRepo.SetMenuItemsAsync(id, request.AssignedMenuItemIds);
 
-        if (request.GuestCount.HasValue || request.EventType != null || request.Location != null
-            || request.Budget.HasValue || request.SpecialWishes != null || request.Allergies != null)
+        if (request.CustomerName != null)
+            await _customerRepo.UpdateAsync(order.CustomerId, request.CustomerName, request.CustomerPhone);
+
+        if (request.GuestCount.HasValue || request.EventDate.HasValue || request.EventType != null
+            || request.Location != null || request.Budget.HasValue || request.SpecialWishes != null
+            || request.Allergies != null || request.DishWishes != null)
         {
+            order.EventDate = request.EventDate ?? order.EventDate;
             order.GuestCount = request.GuestCount ?? order.GuestCount;
             order.EventType = request.EventType ?? order.EventType;
             order.Location = request.Location ?? order.Location;
             order.Budget = request.Budget ?? order.Budget;
             order.SpecialWishes = request.SpecialWishes ?? order.SpecialWishes;
             order.Allergies = request.Allergies ?? order.Allergies;
+            order.DishWishes = request.DishWishes ?? order.DishWishes;
             await _orderRepo.UpdateAsync(order);
         }
 
@@ -181,6 +188,7 @@ public class OrderService : IOrderService
             Budget = order.Budget,
             SpecialWishes = order.SpecialWishes,
             Allergies = order.Allergies,
+            DishWishes = order.DishWishes,
             Status = order.Status,
             CreatedAt = order.CreatedAt,
             UpdatedAt = order.UpdatedAt,

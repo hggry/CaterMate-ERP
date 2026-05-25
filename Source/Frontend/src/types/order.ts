@@ -40,6 +40,9 @@ export interface OrderDto {
 export interface UpdateOrderRequest {
   status?: OrderStatus
   assignedMenuItemIds?: number[]
+  customerName?: string
+  customerPhone?: string
+  eventDate?: string
   guestCount?: number
   eventType?: string
   location?: string

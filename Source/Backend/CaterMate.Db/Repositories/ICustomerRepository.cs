@@ -6,4 +6,5 @@ public interface ICustomerRepository
 {
     Task<int> UpsertByPhoneAsync(string name, string? phone);
     Task<CustomerEntity?> GetByIdAsync(int id);
+    Task UpdateAsync(int id, string name, string? phone);
 }

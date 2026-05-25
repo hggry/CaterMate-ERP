@@ -178,10 +178,10 @@ async function onSubmit(event: FormSubmitEvent): Promise<void> {
         <InputNumber
           input-id="co-budget"
           name="budget"
-          mode="currency"
-          currency="EUR"
-          locale="de-AT"
+          suffix=" €"
           :min="0"
+          :max-fraction-digits="2"
+          :use-grouping="false"
           fluid
         />
       </FormField>
