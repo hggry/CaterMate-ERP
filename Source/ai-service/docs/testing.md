@@ -262,7 +262,7 @@ docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_u
 
 | Rechnung | Lieferant | Wirkung auf Counter | E-Mails | Suggestions |
 |---|---|---|---|---|
-| 1 — `test_rechnung_2026_002.pdf` | Alpin Frisch KG | Avocado & Basmatireis → 2, Schweinskragen → 1 | – | – |
+| 1 — `test_rechnung_2026_002.pdf` | Alpin Frisch KG | Avocado & Basmatireis → 1, Schweinskragen → 1 | – | – |
 | 2 — `test_rechnung_2026_003.pdf` | Südland Großhandel | Avocado & Basmatireis → 3, Paprika & Rindsnacken → 1 | – | – |
 | 3 — `test_rechnung_2026_004.pdf` | Frisch & Fein | Avocado & Basmatireis → 4, Kokosmilch → 2 | – | – |
 | 4 — `test_rechnung_2026_005.pdf` | Bio-Markt Österreich | **Avocado & Basmatireis → 5** → Trigger! Forellenfilet → 0 (Reset) | ✅ **2× Preisvorschlag** (Avocado, Basmatireis) | ✅ 2 Zeilen mit `IncomingInvoiceId=4` |
