@@ -186,19 +186,31 @@ docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_u
 
 #### Schritt 2 — Bestehende Suggestions ggf. leeren (optional, für sauberen Test)
 
+Reihenfolge wichtig: erst die Child-Tabelle (`IncomingInvoiceSuggestions`), dann die Parent-Tabelle (`IncomingInvoices`) — sonst blockiert der FK-Constraint.
+
 ```powershell
 docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "DELETE FROM IncomingInvoiceSuggestions; DELETE FROM IncomingInvoices;"
+```
+
+Verifizieren (beide Counts sollten 0 sein):
+```powershell
+docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT 'IncomingInvoices' AS tabelle, COUNT(*) AS rows FROM IncomingInvoices UNION ALL SELECT 'IncomingInvoiceSuggestions', COUNT(*) FROM IncomingInvoiceSuggestions;"
 ```
 
 #### Schritt 3 — `IncomingInvoices`-Zeilen anlegen (FK-Voraussetzung)
 
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending'), ('test_rechnung_2026_006.pdf', 'Pending'); SELECT Id, FilePath FROM IncomingInvoices ORDER BY Id;"
+docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending'), ('test_rechnung_2026_006.pdf', 'Pending');"
 ```
 
-Der `SELECT` am Ende zeigt die generierten IDs. Bei einer zuvor leeren Tabelle sind das 1–5.
+Verifizieren (vollständigen Inhalt der Tabelle anzeigen — zeigt die generierten IDs):
+```powershell
+docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, FilePath, Status, CreatedAt, ProcessedAt FROM IncomingInvoices ORDER BY Id;"
+```
 
-> ⚠️ Falls die IDs nicht bei 1 starten (Tabelle war nicht leer), die Werte in Schritt 5 entsprechend anpassen.
+Bei einer zuvor leeren Tabelle sind die IDs 1–5.
+
+> ⚠️ Falls die IDs nicht bei 1 starten (Tabelle war nicht leer oder AUTO_INCREMENT wurde nicht zurückgesetzt), die Werte in Schritt 5 entsprechend anpassen.
 
 #### Schritt 4 — Workflow in n8n auf „Active" schalten
 
