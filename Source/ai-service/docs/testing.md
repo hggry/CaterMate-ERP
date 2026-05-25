@@ -265,8 +265,8 @@ docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_u
 | 1 — `test_rechnung_2026_002.pdf` | Alpin Frisch KG | Avocado & Basmatireis → 1, Schweinskragen → 1 | – | – |
 | 2 — `test_rechnung_2026_003.pdf` | Südland Großhandel | Avocado & Basmatireis → 2, Paprika & Rindsnacken → 1 | – | – |
 | 3 — `test_rechnung_2026_004.pdf` | Frisch & Fein | Avocado & Basmatireis → 3, Kokosmilch → 1 | – | – |
-| 4 — `test_rechnung_2026_005.pdf` | Bio-Markt Österreich | Avocado & Basmatireis → 4 |  | ✅ 2 Zeilen mit `IncomingInvoiceId=4` |
-| 5 — `test_rechnung_2026_006.pdf` | Gastro-Depot Wien | **Avocado → 5, Basmatireis → 5**, Trüffelöl → unbekannt | ✅ **2× Preisvorschlag** (Avocado, Basmatireis)✅ + Unbekannte Zutat (Trüffelöl) | – |
+| 4 — `test_rechnung_2026_005.pdf` | Bio-Markt Österreich | Avocado & Basmatireis → 4 | - | - |
+| 5 — `test_rechnung_2026_006.pdf` | Gastro-Depot Wien | **Avocado → 5, Basmatireis → 5**, Trüffelöl → unbekannt | ✅ **2× Preisvorschlag** (Avocado, Basmatireis)✅ + Unbekannte Zutat (Trüffelöl) | ✅ 2 Zeilen mit `IncomingInvoiceId=4` |
 
 ### Edge-Case-Tests
 
