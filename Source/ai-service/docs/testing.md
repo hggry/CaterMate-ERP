@@ -159,11 +159,11 @@ Verifizieren, dass eine eingehende PDF-Rechnung korrekt geparst wird, dass `cons
 ### Voraussetzungen
 
 - 5 Test-PDFs unter `C:\Users\thoma\Downloads\Test Invoices\`:
-  - `test_rechnung_2026_002.pdf` (Alpin Frisch KG)
-  - `test_rechnung_2026_003.pdf` (Südland Großhandel)
-  - `test_rechnung_2026_004.pdf` (Frisch & Fein)
-  - `test_rechnung_2026_005.pdf` (Bio-Markt Österreich)
-  - `test_rechnung_2026_006.pdf` (Gastro-Depot Wien)
+  - `test_rechnung_2026_001.pdf` (Alpin Frisch KG)
+  - `test_rechnung_2026_002.pdf` (Südland Großhandel)
+  - `test_rechnung_2026_003.pdf` (Frisch & Fein)
+  - `test_rechnung_2026_004.pdf` (Bio-Markt Österreich)
+  - `test_rechnung_2026_005.pdf` (Gastro-Depot Wien)
 - Anthropic-, Gmail- und MySQL-Credentials gesetzt.
 - Workflow auf **„Active"** geschaltet → Production-URL.
 
@@ -204,7 +204,7 @@ docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_u
 #### Schritt 3 — `IncomingInvoices`-Zeilen neu anlegen (FK-Voraussetzung)
 
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending'), ('test_rechnung_2026_006.pdf', 'Pending');"
+docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_001.pdf', 'Pending'), ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending');"
 ```
 
 Verifizieren (vollständigen Inhalt der Tabelle anzeigen — sollten 5 Zeilen mit IDs 1–5 sein):
@@ -223,15 +223,15 @@ Im n8n-UI den Workflow [`Eingangsrechnung: Preisüberwachung`](https://sequence-
 Jeweils eine PDF mit der zugehörigen `incomingInvoiceId`:
 
 ```powershell
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=1"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_001.pdf" -F "incomingInvoiceId=1"
 
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=2"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=2"
 
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=3"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=3"
 
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=4"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=4"
 
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_006.pdf" -F "incomingInvoiceId=5"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=5"
 ```
 
 Jeder Call sollte mit `{"message":"Workflow was started"}` antworten.
