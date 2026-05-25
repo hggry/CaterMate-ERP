@@ -119,11 +119,14 @@ Diese Punkte beim Designvorschlag **früh ablehnen**, nicht stillschweigend in e
 
 Ohne Export sieht der Reviewer keine Änderungen — Workflows leben sonst nur in der lokalen n8n-DB.
 
-```bash
-docker compose exec n8n n8n export:workflow --all --output=/workflows/all_workflows.json
+```powershell
+cd C:\Repositories\CaterMate-ERP\Source
+docker compose -p docker --env-file Docker\.env exec n8n n8n export:workflow --all --output=/workflows/all_workflows.json
 ```
 
 oder via Skript: [export_workflows.bat](export_workflows.bat). Danach `git add workflows/all_workflows.json`.
+
+> Pflicht-Flags `-p docker` und `--env-file Docker\.env` siehe [docs/testing.md](docs/testing.md#setup-besonderheit-docker-compose-mit-zwei-flags).
 
 ---
 

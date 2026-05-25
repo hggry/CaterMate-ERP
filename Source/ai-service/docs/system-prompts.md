@@ -614,5 +614,5 @@ Wenn ein Prompt im n8n-UI geändert wird:
 1. Änderung im n8n-UI (Live-Instanz) speichern.
 2. Workflow testen — Definition of Done laut [CLAUDE.md](../CLAUDE.md) einhalten.
 3. Hier in `system-prompts.md` den entsprechenden Platzhalterblock aktualisieren.
-4. `docker compose exec n8n n8n export:workflow --all --output=/workflows/all_workflows.json` ausführen.
+4. Workflows exportieren (Befehl siehe [README.md](../README.md#-workflows-exportieren-vor-jedem-git-commit)).
 5. Committen mit `feat(ai)` oder `fix(ai)` und kurzer Erläuterung der Prompt-Änderung im Commit-Body.
