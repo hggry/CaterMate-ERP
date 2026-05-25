@@ -192,10 +192,12 @@ Reihenfolge wichtig: erst die Child-Tabelle (`IncomingInvoiceSuggestions`), dann
 docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "DELETE FROM IncomingInvoiceSuggestions; DELETE FROM IncomingInvoices;"
 ```
 
-Verifizieren (beide Counts sollten 0 sein):
+Inhalt beider Tabellen prüfen (sollten beide leer sein):
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT 'IncomingInvoices' AS tabelle, COUNT(*) AS rows FROM IncomingInvoices UNION ALL SELECT 'IncomingInvoiceSuggestions', COUNT(*) FROM IncomingInvoiceSuggestions;"
+docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT * FROM IncomingInvoices; SELECT * FROM IncomingInvoiceSuggestions;"
 ```
+
+> **Wichtig:** Bei leeren Tabellen produziert `mysql -e` **gar keinen Output** (nicht einmal Headers). Kein Output = beide Tabellen sind leer = Erfolg. Wenn etwas zurückkommt, sind dort noch Zeilen drin und das DELETE hat (z. B. wegen FK-Constraint) nicht durchgegriffen.
 
 #### Schritt 3 — `IncomingInvoices`-Zeilen anlegen (FK-Voraussetzung)
 
