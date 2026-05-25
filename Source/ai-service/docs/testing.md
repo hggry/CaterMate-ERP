@@ -16,10 +16,24 @@ Strukturierte Anleitungen zum manuellen End-to-End-Test der drei Workflows. Alle
 
 ### Voraussetzungen
 
-- Docker-Stack läuft (`docker compose up --build` aus `Source/Docker/`).
-- Container `docker-db-1` (MySQL) und `ai-service-postgres-1` (n8n-State) sind gestartet.
+- Docker-Stack läuft (`docker compose up --build` aus `Source/`).
+- Container `docker-db-1` (MySQL) und der n8n-Postgres-Container (`n8n_postgres`-Service) sind gestartet.
 - ngrok-Tunnel zeigt auf den n8n-Container — die aktuelle URL ist in jedem Webhook-Knoten in der n8n-UI sichtbar.
 - Workflow muss in n8n auf **„Active"** stehen, damit die Production-URL (`/webhook/...`) antwortet. Im Test-Modus (`/webhook-test/...`) muss vor **jedem** Request manuell „Execute workflow" in der UI geklickt werden.
+
+### Arbeitsverzeichnis — wann muss man wohin wechseln?
+
+| Befehlstyp | Beispiel | `cd` nötig? |
+|---|---|---|
+| `docker compose exec ...` | PostgreSQL-Befehle für Workflow 1 + 3 (n8n_postgres) | **Ja** — `cd C:\Repositories\CaterMate-ERP\Source` (hier liegt die `docker-compose.yml`). |
+| `docker exec <container> ...` | MySQL-Befehle für Workflow 2 (Container `docker-db-1`) | Nein — `docker exec` nutzt den Container-Namen direkt, funktioniert aus jedem Verzeichnis. |
+| `curl.exe ...` | Webhook-Aufrufe (Workflow 2 + 3) | Nein — die PDF-Pfade sind absolut. |
+
+> **Faustregel:** Sobald `docker compose` (mit Leerzeichen) im Befehl steht → vorher diesen Befehl ausführen:
+> ```powershell
+> cd C:\Repositories\CaterMate-ERP\Source
+> ```
+> In der Doku sind alle `docker compose`-Code-Blöcke bereits **self-contained** — sie enthalten den `cd`-Befehl in der ersten Zeile. Einfach den ganzen Block kopieren.
 
 ### Passwort-Warning beim mysql-Befehl
 
@@ -45,6 +59,16 @@ Verifizieren, dass der Telegram-Bot Catering-Anfragen aufnimmt, den Slot-Filling
 - Gemini- und Anthropic-Credentials sind gesetzt.
 - Workflow aktiv (sonst empfängt der Bot keine Updates).
 
+### Arbeitsverzeichnis (MUSS einmal pro Terminal ausgeführt werden)
+
+Alle DB-Befehle in diesem Abschnitt nutzen `docker compose exec` → Terminal muss im Verzeichnis mit der `docker-compose.yml` stehen. **Diesen Befehl als erstes** in deinem PowerShell-Fenster ausführen:
+
+```powershell
+cd C:\Repositories\CaterMate-ERP\Source
+```
+
+Solange du das PowerShell-Fenster nicht schließt, gilt das für alle folgenden Befehle. Bei einem neuen Fenster: nochmal `cd` ausführen. (Falls du es vergisst → kommt der Fehler `no configuration file provided: not found`.)
+
 ### Test 1 — Vollständige Anfrage erfassen (Happy Path)
 
 1. Im Telegram-Chat mit dem Bot eine Erstnachricht senden, z. B. *„Hallo, ich plane eine Hochzeit für 80 Personen Mitte September in Salzburg."*
@@ -58,18 +82,23 @@ Verifizieren, dass der Telegram-Bot Catering-Anfragen aufnimmt, den Slot-Filling
 
 ### Test 2 — State-Inhalt prüfen
 
+Jeder Block ist self-contained (mit `cd`). Du kannst einen einzelnen Block in ein neues Terminal kopieren — er funktioniert direkt.
+
 #### Anzahl der Konversationen
 ```powershell
+cd C:\Repositories\CaterMate-ERP\Source
 docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT COUNT(*) FROM konversationen;"
 ```
 
 #### Vollständigen State einer Konversation lesen
 ```powershell
+cd C:\Repositories\CaterMate-ERP\Source
 docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, status, aktualisiert_am, state FROM konversationen ORDER BY aktualisiert_am DESC LIMIT 1;"
 ```
 
 #### Nur die fehlenden Felder einer Konversation prüfen
 ```powershell
+cd C:\Repositories\CaterMate-ERP\Source
 docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, state->'fehlende_felder' AS fehlende_felder, state->>'status' AS status FROM konversationen ORDER BY aktualisiert_am DESC LIMIT 5;"
 ```
 
@@ -77,16 +106,19 @@ docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, 
 
 #### Alle Konversationen löschen
 ```powershell
+cd C:\Repositories\CaterMate-ERP\Source
 docker compose exec n8n_postgres psql -U n8n -d n8n -c "DELETE FROM konversationen;"
 ```
 
 #### Eine einzelne Konversation löschen (per Telegram-Chat-ID)
 ```powershell
+cd C:\Repositories\CaterMate-ERP\Source
 docker compose exec n8n_postgres psql -U n8n -d n8n -c "DELETE FROM konversationen WHERE konversation_id = '<TELEGRAM_CHAT_ID>';"
 ```
 
 #### Bestätigen, dass die Tabelle leer ist
 ```powershell
+cd C:\Repositories\CaterMate-ERP\Source
 docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT COUNT(*) FROM konversationen;"
 ```
 
@@ -123,6 +155,10 @@ Verifizieren, dass eine eingehende PDF-Rechnung korrekt geparst wird, dass `cons
   - `test_rechnung_2026_006.pdf` (Gastro-Depot Wien)
 - Anthropic-, Gmail- und MySQL-Credentials gesetzt.
 - Workflow auf **„Active"** geschaltet → Production-URL.
+
+### Arbeitsverzeichnis
+
+Die MySQL-Befehle hier nutzen `docker exec docker-db-1` direkt → **kein `cd` nötig**, sie laufen aus jedem Verzeichnis. Die curl-Aufrufe nutzen absolute PDF-Pfade → ebenfalls aus jedem Verzeichnis möglich.
 
 ### Test-Sequenz (Empfohlene Reihenfolge)
 
@@ -238,6 +274,10 @@ Verifizieren, dass ein an den Workflow geschicktes PDF korrekt an den richtigen 
 - Telegram-Bot kann an diesen Chat schreiben (Kunde muss den Bot vorher mindestens einmal angeschrieben haben — sonst Telegram-Error „bot was blocked" oder „chat not found").
 - Workflow ist **aktiv** (Status: `active: true`).
 
+### Arbeitsverzeichnis
+
+Der curl-Aufruf (Test 1) nutzt absolute Pfade → aus jedem Verzeichnis möglich. Der DB-Check (Test 2) nutzt `docker compose exec` → der Block enthält den `cd`-Befehl bereits, einfach komplett kopieren.
+
 ### Test 1 — Angebot an Kunden senden
 
 ```powershell
@@ -254,6 +294,7 @@ Antwort: `{"message":"Workflow was started"}`
 ### Test 2 — Status-Update verifizieren
 
 ```powershell
+cd C:\Repositories\CaterMate-ERP\Source
 docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, status, aktualisiert_am FROM konversationen WHERE konversation_id = '<TELEGRAM_CHAT_ID>';"
 ```
 
@@ -287,12 +328,13 @@ Aktuell **kein Folge-Workflow** angeschlossen. Beim Klick sendet Telegram eine C
 docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "<SQL>"
 ```
 
-### PostgreSQL — Standard-Pattern
+### PostgreSQL — Standard-Pattern (immer zusammen ausführen)
 ```powershell
+cd C:\Repositories\CaterMate-ERP\Source
 docker compose exec n8n_postgres psql -U n8n -d n8n -c "<SQL>"
 ```
 
-> Beim PostgreSQL-Befehl wird `docker compose` (mit Leerzeichen) statt `docker exec` benutzt, weil n8n_postgres als Service in `Source/Docker/docker-compose.yml` definiert ist — der Befehl muss aus `Source/Docker/` heraus aufgerufen werden.
+> Beim PostgreSQL-Befehl wird `docker compose` (mit Leerzeichen) statt `docker exec` benutzt, weil `n8n_postgres` als Service in [Source/docker-compose.yml](../../docker-compose.yml) definiert ist. Der `cd`-Befehl davor ist Pflicht — ohne ihn findet `docker compose` die YAML nicht und meldet `no configuration file provided`.
 
 ### Status-Werte in `konversationen.status`
 

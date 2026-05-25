@@ -15,9 +15,11 @@ n8n-basierte KI-Orchestrierungsschicht von CaterMate-ERP. Hier laufen die Workfl
 ### Docker starten
 Vom Repo-Root (`CaterMate-ERP/`):
 ```powershell
-cd Source/Docker
+cd Source
 docker compose up --build
 ```
+
+> Wichtig: Die `docker-compose.yml` liegt in [Source/](../docker-compose.yml). Aus `Source/Docker/` (nur `.env`-Dateien) heraus kennt `docker compose` das Setup nicht.
 
 n8n läuft anschließend auf `http://localhost:5678`. Externer Zugriff (für Telegram- und Backend-Webhooks) erfolgt über ngrok — die aktuelle URL siehst du in der n8n-UI an jedem Webhook-Node.
 
@@ -42,6 +44,6 @@ Oder per Skript: [export_workflows.bat](export_workflows.bat). Danach `git add w
 
 - **Workflows (Quelle der Wahrheit):** Live-n8n-Instanz, bearbeitet via n8n-mcp.
 - **Workflows (Git-Export):** [workflows/all_workflows.json](workflows/all_workflows.json) — Export-Artefakt, **nicht** direkt bearbeiten.
-- **DB-Schema:** [../Docker/db/setup.sql](../Docker/db/setup.sql) — MySQL-Tabellen (Ingredients, IncomingInvoices, IncomingInvoiceSuggestions, MenuItems, …).
+- **DB-Schema:** [../db/setup.sql](../db/setup.sql) — MySQL-Tabellen (Ingredients, IncomingInvoices, IncomingInvoiceSuggestions, MenuItems, …).
 - **Backend-API-Verträge:** [../Backend/CaterMate.API/Controllers/N8nController.cs](../Backend/CaterMate.API/Controllers/N8nController.cs) (Endpunkt für Workflow 1 → Backend).
 - **n8n-Konventionen:** [CLAUDE.md](CLAUDE.md) — Naming, Sprache, Out-of-Scope, Definition of Done.
