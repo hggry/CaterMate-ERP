@@ -1,10 +1,13 @@
 import http from './http'
-import type { OrderDto, OrderQuery, UpdateOrderRequest } from '@/types/order'
+import type { CreateOrderRequest, OrderDto, OrderQuery, UpdateOrderRequest } from '@/types/order'
 import type { DishSuggestionsResponse } from '@/types/suggestion'
 
 export const ordersApi = {
   list: (query: OrderQuery = {}): Promise<OrderDto[]> =>
     http.get<OrderDto[]>('/orders', { params: query }).then((r) => r.data),
+
+  create: (payload: CreateOrderRequest): Promise<OrderDto> =>
+    http.post<OrderDto>('/orders', payload).then((r) => r.data),
 
   getById: (id: number): Promise<OrderDto> =>
     http.get<OrderDto>(`/orders/${id}`).then((r) => r.data),

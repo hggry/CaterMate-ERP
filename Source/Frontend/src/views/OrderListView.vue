@@ -3,18 +3,22 @@ import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DataTable, { type DataTableRowClickEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
+import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import OrderFilters from '@/components/orders/OrderFilters.vue'
+import CreateOrderDialog from '@/components/orders/CreateOrderDialog.vue'
 import StatusTag from '@/components/common/StatusTag.vue'
 import { ordersApi } from '@/services/ordersApi'
 import { useApi } from '@/composables/useApi'
 import { useFormat } from '@/composables/useFormat'
-import { ORDER_STATUSES, type OrderQuery, type OrderStatus } from '@/types/order'
+import { ORDER_STATUSES, type OrderDto, type OrderQuery, type OrderStatus } from '@/types/order'
 
 const route = useRoute()
 const router = useRouter()
 const { formatDate } = useFormat()
+
+const createDialogVisible = ref(false)
 
 const status = ref<OrderStatus | null>(null)
 const from = ref<Date | null>(null)
@@ -46,13 +50,22 @@ watch([status, from, to], load)
 function onRowClick(event: DataTableRowClickEvent): void {
   router.push({ name: 'order-detail', params: { id: String(event.data.id) } })
 }
+
+function onOrderCreated(order: OrderDto): void {
+  router.push({ name: 'order-detail', params: { id: String(order.id) } })
+}
 </script>
 
 <template>
   <div class="order-list">
-    <h1>Aufträge</h1>
+    <header class="order-list__header">
+      <h1>Aufträge</h1>
+      <Button label="Neuer Auftrag" icon="pi pi-plus" @click="createDialogVisible = true" />
+    </header>
 
     <OrderFilters v-model:status="status" v-model:from="from" v-model:to="to" />
+
+    <CreateOrderDialog v-model:visible="createDialogVisible" @saved="onOrderCreated" />
 
     <Message v-if="error" severity="error" :closable="false">
       Aufträge konnten nicht geladen werden.
@@ -90,8 +103,15 @@ function onRowClick(event: DataTableRowClickEvent): void {
 </template>
 
 <style scoped>
-.order-list h1 {
-  margin: 0 0 1rem;
+.order-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.order-list__header h1 {
+  margin: 0;
 }
 
 .order-list__center {
