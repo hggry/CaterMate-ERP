@@ -473,7 +473,7 @@ Dedizierter Eingangskanal für den n8n-Workflow. Auth: `X-Api-Key` Header (siehe
 {
   "customer": {
     "name": "Ben Soundso",
-    "tel": "+43 664 123456"
+    "ChatId": "34672364523"
   },
   "orderMenuItems": [
     {
