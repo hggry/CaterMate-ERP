@@ -223,15 +223,15 @@ Im n8n-UI den Workflow [`Eingangsrechnung: Preisüberwachung`](https://sequence-
 Jeweils eine PDF mit der zugehörigen `incomingInvoiceId`:
 
 ```powershell
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_001.pdf" -F "incomingInvoiceId=1"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_001.pdf" -F "incomingInvoiceId=1"
 
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=2"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_002.pdf" -F "incomingInvoiceId=2"
 
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=3"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_003.pdf" -F "incomingInvoiceId=3"
 
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=4"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_004.pdf" -F "incomingInvoiceId=4"
 
-curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=5"
+curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook-test/invoice-check" -F "file=@C:\Users\thoma\Downloads\Test Invoices\test_rechnung_2026_005.pdf" -F "incomingInvoiceId=5"
 ```
 
 Jeder Call sollte mit `{"message":"Workflow was started"}` antworten.
