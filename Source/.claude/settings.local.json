@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(docker compose *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(docker compose -f C:\\\\Repositories\\\\CaterMate-ERP\\\\Source\\\\docker-compose.yml -p docker down; docker rm source-frontend-1 source-backend-1 source-db-1 2>$null)",
+      "PowerShell(docker version *)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(docker system prune *)",
+      "PowerShell(Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\"; Write-Output \"Docker Desktop gestartet\")",
+      "PowerShell(wsl --shutdown 2>&1; Start-Sleep -Seconds 3; Write-Output \"WSL gestoppt\"; wsl --unregister docker-desktop 2>&1; Write-Output \"docker-desktop deregistriert\"; wsl --unregister docker-desktop-data 2>&1; Write-Output \"docker-desktop-data deregistriert\"; Write-Output \"Freier Speicher jetzt: $\\([math]::Round\\(\\(Get-PSDrive C\\).Free/1GB,2\\)\\) GB\")",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\thoma\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Repositories-CaterMate-ERP-Source\\\\9f599c4c-2b9b-460f-a67f-d8deb5f7b724\\\\tasks\\\\bxwmzning.output\" -ErrorAction SilentlyContinue; Write-Output '---DISK---'; Write-Output \"Frei: $\\([math]::Round\\(\\(Get-PSDrive C\\).Free/1GB,2\\)\\) GB\"; wsl --list --verbose 2>&1)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(Rename-Item *)",
+      "PowerShell(Restart-Service *)",
+      "PowerShell(Remove-ItemProperty *)"
+    ]
+  }
+}

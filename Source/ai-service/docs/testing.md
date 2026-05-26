@@ -17,46 +17,23 @@ Strukturierte Anleitungen zum manuellen End-to-End-Test der drei Workflows. Alle
 ### Voraussetzungen
 
 - Docker-Stack läuft (Startbefehl siehe [README.md](../README.md#docker-starten)).
-- Container `docker-db-1` (MySQL) und der n8n-Postgres-Container (`n8n_postgres`-Service) sind gestartet.
+- Container `source-db-1` (MySQL) und der n8n-Postgres-Container (`n8n_postgres`-Service) sind gestartet.
 - ngrok-Tunnel zeigt auf den n8n-Container — die aktuelle URL ist in jedem Webhook-Knoten in der n8n-UI sichtbar.
 - Workflow muss in n8n auf **„Active"** stehen, damit die Production-URL (`/webhook/...`) antwortet. Im Test-Modus (`/webhook-test/...`) muss vor **jedem** Request manuell „Execute workflow" in der UI geklickt werden.
 
-### Setup-Besonderheit: docker compose mit zwei Flags
-
-In diesem Repo liegen `docker-compose.yml` und `.env` in unterschiedlichen Ordnern, und die bestehenden Container wurden historisch unter dem Projekt-Namen `docker` angelegt:
-
-```
-Source/
-├── docker-compose.yml       ← compose-Datei
-└── Docker/
-    └── .env                  ← env-Variablen
-```
-
-Daraus ergeben sich zwei Pflicht-Flags für jeden `docker compose`-Befehl:
-
-- `-p docker` — setzt den Projekt-Namen auf `docker`, damit die bestehenden Container (`docker-db-1`, `docker-n8n_postgres-1`, …) gefunden werden.
-- `--env-file Docker\.env` — verweist auf die Env-Datei im Docker-Unterordner; ohne sie tauchen 13 Warnings wegen unbekannter Variablen auf.
-
-Standard-Pattern:
-
-```powershell
-cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec <service> <befehl>
-```
-
 ### Arbeitsverzeichnis-Übersicht
 
-| Befehlstyp | Beispiel | Verzeichnis + Flags |
+| Befehlstyp | Beispiel | Verzeichnis |
 |---|---|---|
-| `docker compose exec ...` | PostgreSQL-Befehle für Workflow 1 + 3 (`n8n_postgres`) | `cd C:\Repositories\CaterMate-ERP\Source` + Flags `-p docker --env-file Docker\.env` |
-| `docker exec <container> ...` | MySQL-Befehle für Workflow 2 (Container `docker-db-1`) | egal — `docker exec` nutzt den Container-Namen direkt, funktioniert aus jedem Verzeichnis. |
+| `docker compose exec ...` | PostgreSQL-Befehle für Workflow 1 + 3 (`n8n_postgres`) | `cd C:\Repositories\CaterMate-ERP\Source` — dort liegen `docker-compose.yml` und `.env` direkt nebeneinander, beide werden automatisch erkannt. |
+| `docker exec <container> ...` | MySQL-Befehle für Workflow 2 (Container `source-db-1`) | egal — `docker exec` nutzt den Container-Namen direkt, funktioniert aus jedem Verzeichnis. |
 | `curl.exe ...` | Webhook-Aufrufe (Workflow 2 + 3) | egal — PDF-Pfade sind absolut. |
 
-Alle `docker compose`-Code-Blöcke in dieser Doku sind **self-contained** — sie enthalten `cd` und Flags bereits. Einfach den ganzen Block kopieren.
+Alle `docker compose`-Code-Blöcke in dieser Doku sind **self-contained** — sie enthalten das `cd` bereits. Einfach den ganzen Block kopieren.
 
 ### Passwort-Warning beim mysql-Befehl
 
-`docker exec docker-db-1 mysql ... -p<passwort>` löst die Warnung `Using a password on the command line interface can be insecure.` aus. **Nicht relevant** — der Befehl funktioniert trotzdem. Sauberer ohne Warnung: Passwort über `-e MYSQL_PWD=...` übergeben (siehe Beispiele unten).
+`docker exec source-db-1 mysql ... -p<passwort>` löst die Warnung `Using a password on the command line interface can be insecure.` aus. **Nicht relevant** — der Befehl funktioniert trotzdem. Sauberer ohne Warnung: Passwort über `-e MYSQL_PWD=...` übergeben (siehe Beispiele unten).
 
 ### Mysql-Output bei `-e "..."`
 
@@ -80,7 +57,7 @@ Verifizieren, dass der Telegram-Bot Catering-Anfragen aufnimmt, den Slot-Filling
 
 ### Hinweis zur Arbeitsumgebung
 
-Alle DB-Befehle nutzen das Standard-Pattern aus dem [Allgemeines-Abschnitt](#setup-besonderheit-docker-compose-mit-zwei-flags). Jeder Code-Block enthält bereits `cd`, `-p docker` und `--env-file Docker\.env`.
+Alle DB-Befehle nutzen das Standard-Pattern aus dem [Allgemeines-Abschnitt](#arbeitsverzeichnis-übersicht). Jeder Code-Block enthält bereits das `cd ...\Source` — `docker compose` findet `docker-compose.yml` und `.env` von dort automatisch.
 
 ### Test 1 — Vollständige Anfrage erfassen (Happy Path)
 
@@ -98,19 +75,19 @@ Alle DB-Befehle nutzen das Standard-Pattern aus dem [Allgemeines-Abschnitt](#set
 #### Anzahl der Konversationen
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d n8n -c "SELECT COUNT(*) FROM konversationen;"
+docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT COUNT(*) FROM konversationen;"
 ```
 
 #### Vollständigen State einer Konversation lesen
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, status, aktualisiert_am, state FROM konversationen ORDER BY aktualisiert_am DESC LIMIT 1;"
+docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, status, aktualisiert_am, state FROM konversationen ORDER BY aktualisiert_am DESC LIMIT 1;"
 ```
 
 #### Nur die fehlenden Felder einer Konversation prüfen
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, state->'fehlende_felder' AS fehlende_felder, state->>'status' AS status FROM konversationen ORDER BY aktualisiert_am DESC LIMIT 5;"
+docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, state->'fehlende_felder' AS fehlende_felder, state->>'status' AS status FROM konversationen ORDER BY aktualisiert_am DESC LIMIT 5;"
 ```
 
 ### Test 3 — Konversationen zurücksetzen (für neuen Durchlauf)
@@ -118,19 +95,19 @@ docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d
 #### Alle Konversationen löschen
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d n8n -c "DELETE FROM konversationen;"
+docker compose exec n8n_postgres psql -U n8n -d n8n -c "DELETE FROM konversationen;"
 ```
 
 #### Eine einzelne Konversation löschen (per Telegram-Chat-ID)
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d n8n -c "DELETE FROM konversationen WHERE konversation_id = '<TELEGRAM_CHAT_ID>';"
+docker compose exec n8n_postgres psql -U n8n -d n8n -c "DELETE FROM konversationen WHERE konversation_id = '<TELEGRAM_CHAT_ID>';"
 ```
 
 #### Bestätigen, dass die Tabelle leer ist
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d n8n -c "SELECT COUNT(*) FROM konversationen;"
+docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT COUNT(*) FROM konversationen;"
 ```
 
 ### Test 4 — Edge Cases (manuell im Telegram-Chat)
@@ -169,19 +146,19 @@ Verifizieren, dass eine eingehende PDF-Rechnung korrekt geparst wird, dass `cons
 
 ### Arbeitsverzeichnis
 
-Die MySQL-Befehle hier nutzen `docker exec docker-db-1` direkt → **kein `cd` nötig**, sie laufen aus jedem Verzeichnis. Die curl-Aufrufe nutzen absolute PDF-Pfade → ebenfalls aus jedem Verzeichnis möglich.
+Die MySQL-Befehle hier nutzen `docker exec source-db-1` direkt → **kein `cd` nötig**, sie laufen aus jedem Verzeichnis. Die curl-Aufrufe nutzen absolute PDF-Pfade → ebenfalls aus jedem Verzeichnis möglich.
 
 ### Test-Sequenz (Empfohlene Reihenfolge)
 
 #### Schritt 1 — Counter zurücksetzen (sauberer Startzustand)
 
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "UPDATE Ingredients SET consecutive_over_count = 0;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "UPDATE Ingredients SET consecutive_over_count = 0;"
 ```
 
 Verifizieren (sollte 0 Zeilen liefern):
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, Name, consecutive_over_count FROM Ingredients WHERE consecutive_over_count > 0;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, Name, consecutive_over_count FROM Ingredients WHERE consecutive_over_count > 0;"
 ```
 
 #### Schritt 2 — Beide Tabellen leeren und ID-Counter zurücksetzen
@@ -189,14 +166,14 @@ docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_u
 Damit die in Schritt 3 neu angelegten Zeilen verlässlich die IDs 1–5 bekommen (auf die sich die curl-Calls in Schritt 5 stützen), beide Tabellen leeren **und** den `AUTO_INCREMENT`-Counter auf 1 zurücksetzen. Reihenfolge wichtig: erst Child (`IncomingInvoiceSuggestions`), dann Parent (`IncomingInvoices`) — sonst blockiert der FK-Constraint.
 
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "DELETE FROM IncomingInvoiceSuggestions; DELETE FROM IncomingInvoices; ALTER TABLE IncomingInvoiceSuggestions AUTO_INCREMENT = 1; ALTER TABLE IncomingInvoices AUTO_INCREMENT = 1;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "DELETE FROM IncomingInvoiceSuggestions; DELETE FROM IncomingInvoices; ALTER TABLE IncomingInvoiceSuggestions AUTO_INCREMENT = 1; ALTER TABLE IncomingInvoices AUTO_INCREMENT = 1;"
 ```
 
 Hintergrund: `DELETE FROM` setzt den `AUTO_INCREMENT`-Counter **nicht** zurück. Ohne die beiden `ALTER TABLE`-Statements würde der nächste INSERT die Id direkt hinter der letzten je vergebenen Id fortsetzen (z. B. Id=11 statt Id=1), was die hardcodierten `incomingInvoiceId=1..5` in den curl-Calls brechen würde.
 
 Inhalt beider Tabellen prüfen (sollten beide leer sein):
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT * FROM IncomingInvoices; SELECT * FROM IncomingInvoiceSuggestions;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "SELECT * FROM IncomingInvoices; SELECT * FROM IncomingInvoiceSuggestions;"
 ```
 
 > **Wichtig:** Bei leeren Tabellen produziert `mysql -e` **gar keinen Output** (nicht einmal Headers). Kein Output = beide Tabellen sind leer = Erfolg. Wenn etwas zurückkommt, sind dort noch Zeilen drin und das DELETE hat (z. B. wegen FK-Constraint) nicht durchgegriffen.
@@ -204,12 +181,12 @@ docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_u
 #### Schritt 3 — `IncomingInvoices`-Zeilen neu anlegen (FK-Voraussetzung)
 
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_001.pdf', 'Pending'), ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending');"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "INSERT INTO IncomingInvoices (FilePath, Status) VALUES ('test_rechnung_2026_001.pdf', 'Pending'), ('test_rechnung_2026_002.pdf', 'Pending'), ('test_rechnung_2026_003.pdf', 'Pending'), ('test_rechnung_2026_004.pdf', 'Pending'), ('test_rechnung_2026_005.pdf', 'Pending');"
 ```
 
 Verifizieren (vollständigen Inhalt der Tabelle anzeigen — sollten 5 Zeilen mit IDs 1–5 sein):
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, FilePath, Status, CreatedAt, ProcessedAt FROM IncomingInvoices ORDER BY Id;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, FilePath, Status, CreatedAt, ProcessedAt FROM IncomingInvoices ORDER BY Id;"
 ```
 
 Dank des `AUTO_INCREMENT`-Reset in Schritt 2 sind die IDs garantiert 1, 2, 3, 4, 5 — passend zu den `incomingInvoiceId`-Werten in Schritt 5.
@@ -240,22 +217,22 @@ Jeder Call sollte mit `{"message":"Workflow was started"}` antworten.
 
 ##### Zähler-Stand prüfen
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, Name, Unit, PurchasePricePerUnit, consecutive_over_count FROM Ingredients ORDER BY Id;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, Name, Unit, PurchasePricePerUnit, consecutive_over_count FROM Ingredients ORDER BY Id;"
 ```
 
 ##### Erzeugte Preisvorschläge ansehen
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, IncomingInvoiceId, IngredientId, CurrentPrice, SuggestedPrice, Accepted FROM IncomingInvoiceSuggestions ORDER BY Id DESC;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, IncomingInvoiceId, IngredientId, CurrentPrice, SuggestedPrice, Accepted FROM IncomingInvoiceSuggestions ORDER BY Id DESC;"
 ```
 
 ##### Status der angelegten IncomingInvoices
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, FilePath, Status, CreatedAt, ProcessedAt FROM IncomingInvoices ORDER BY Id DESC;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "SELECT Id, FilePath, Status, CreatedAt, ProcessedAt FROM IncomingInvoices ORDER BY Id DESC;"
 ```
 
 ##### Schnellcheck per Count
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "SELECT COUNT(*) AS suggestion_count FROM IncomingInvoiceSuggestions;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "SELECT COUNT(*) AS suggestion_count FROM IncomingInvoiceSuggestions;"
 ```
 
 ### Erwartetes Ergebnis (laut Test-PDF-Design)
@@ -280,7 +257,7 @@ curl.exe -X POST "https://sequence-amusable-sash.ngrok-free.dev/webhook/invoice-
 #### Test B — Isolierter Test des 5er-Triggers
 Counter manuell auf 4 setzen, dann eine passende PDF schicken:
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "UPDATE Ingredients SET consecutive_over_count = 4 WHERE Id = 1;"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "UPDATE Ingredients SET consecutive_over_count = 4 WHERE Id = 1;"
 ```
 Danach Rechnung mit Avocado >10% drüber senden → E-Mail + Suggestion-Row im ersten Anlauf.
 
@@ -316,7 +293,7 @@ Antwort: `{"message":"Workflow was started"}`
 
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, status, aktualisiert_am FROM konversationen WHERE konversation_id = '<TELEGRAM_CHAT_ID>';"
+docker compose exec n8n_postgres psql -U n8n -d n8n -c "SELECT konversation_id, status, aktualisiert_am FROM konversationen WHERE konversation_id = '<TELEGRAM_CHAT_ID>';"
 ```
 
 Erwartung: `status = 'offer_sent'`, `aktualisiert_am` zeigt den Zeitpunkt des curl-Calls.
@@ -341,24 +318,21 @@ Aktuell **kein Folge-Workflow** angeschlossen. Beim Klick sendet Telegram eine C
 
 | DB | Container | User | Passwort | DB-Name |
 |---|---|---|---|---|
-| MySQL | `docker-db-1` | `catermate_user` | `catermate_dev_password` | `catermate_db` |
+| MySQL | `source-db-1` | `catermate_user` | `catermate_dev_password` | `catermate_db` |
 | PostgreSQL (n8n) | `n8n_postgres` (via `docker compose exec`) | `n8n` | (per Env) | `n8n` |
 
 ### MySQL — Passwort sauber übergeben (ohne Warning)
 ```powershell
-docker exec -e MYSQL_PWD=catermate_dev_password docker-db-1 mysql -u catermate_user catermate_db -e "<SQL>"
+docker exec -e MYSQL_PWD=catermate_dev_password source-db-1 mysql -u catermate_user catermate_db -e "<SQL>"
 ```
 
 ### PostgreSQL — Standard-Pattern (immer zusammen ausführen)
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n_postgres psql -U n8n -d n8n -c "<SQL>"
+docker compose exec n8n_postgres psql -U n8n -d n8n -c "<SQL>"
 ```
 
-Der Befehl besteht aus drei Teilen:
-- `cd C:\Repositories\CaterMate-ERP\Source` — wechselt in das Verzeichnis mit der `docker-compose.yml`. Ohne `cd` meldet docker compose `no configuration file provided`.
-- `-p docker` — setzt den Projekt-Namen auf `docker`, damit die bestehenden Container (historisch unter Projekt `docker` angelegt) gefunden werden. Ohne diesen Flag erscheint `service "n8n_postgres" is not running`.
-- `--env-file Docker\.env` — verweist auf die Env-Datei im `Docker/`-Unterordner. Ohne diesen Flag tauchen 13 Warnings zu nicht gesetzten Variablen auf (siehe [Setup-Besonderheit](#setup-besonderheit-docker-compose-mit-zwei-flags)).
+`cd C:\Repositories\CaterMate-ERP\Source` wechselt in das Verzeichnis mit der `docker-compose.yml`. Ohne `cd` meldet docker compose `no configuration file provided`. Die `.env` liegt im selben Ordner und wird von compose automatisch eingelesen — keine zusätzlichen Flags nötig.
 
 ### Status-Werte in `konversationen.status`
 

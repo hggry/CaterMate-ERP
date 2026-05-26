@@ -6,6 +6,7 @@ n8n-basierte KI-Orchestrierungsschicht von CaterMate-ERP. Hier laufen die Workfl
 
 | Datei | Inhalt |
 |---|---|
+| [docs/setup.md](docs/setup.md) | Schritt-für-Schritt-Setup für eine frisch geklonte Maschine (Docker, Workflow-Import, Credentials, Aktivierung). |
 | [docs/workflows.md](docs/workflows.md) | Detaillierte Beschreibung der 3 Workflows mit Mermaid-Diagrammen, Trigger-URLs, Datenflüssen und Integrationspunkten. |
 | [docs/system-prompts.md](docs/system-prompts.md) | Dokumentation der KI-Systemprompts (Gemini Slot-Filling, Claude Menü-Agent, Claude PDF-Analyse). |
 | [docs/testing.md](docs/testing.md) | Strukturierte Test-Rezepte für alle 3 Workflows (DB-Checks, Reset-Befehle, curl-Calls). |
@@ -16,12 +17,10 @@ n8n-basierte KI-Orchestrierungsschicht von CaterMate-ERP. Hier laufen die Workfl
 
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env up --build
+docker compose up --build
 ```
 
-Warum die zwei Flags? `docker-compose.yml` liegt in `Source/`, die `.env`-Datei jedoch in `Source/Docker/.env`. Die bestehenden Container heißen historisch `docker-*` (Projekt `docker`). Beide Flags sind deshalb für jeden `docker compose`-Aufruf in diesem Repo Pflicht:
-- `-p docker` — bindet an den bestehenden Projekt-Namen.
-- `--env-file Docker\.env` — verweist auf die Env-Datei im Unterordner.
+`docker-compose.yml` und `.env` liegen beide direkt in `Source/`. Compose findet beide automatisch — keine zusätzlichen Flags nötig.
 
 n8n läuft anschließend auf `http://localhost:5678`. Externer Zugriff (für Telegram- und Backend-Webhooks) erfolgt über ngrok — die aktuelle URL ist in der n8n-UI an jedem Webhook-Node sichtbar.
 
@@ -38,7 +37,7 @@ Workflows leben in der lokalen n8n-Postgres-DB des Containers. **Vor jedem Commi
 
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n n8n export:workflow --all --output=/workflows/all_workflows.json
+docker compose exec n8n n8n export:workflow --all --output=/workflows/all_workflows.json
 ```
 
 Oder per Skript: [export_workflows.bat](export_workflows.bat). Danach `git add workflows/all_workflows.json` und commit.

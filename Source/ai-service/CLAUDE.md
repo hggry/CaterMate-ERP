@@ -121,12 +121,12 @@ Ohne Export sieht der Reviewer keine Änderungen — Workflows leben sonst nur i
 
 ```powershell
 cd C:\Repositories\CaterMate-ERP\Source
-docker compose -p docker --env-file Docker\.env exec n8n n8n export:workflow --all --output=/workflows/all_workflows.json
+docker compose exec n8n n8n export:workflow --all --output=/workflows/all_workflows.json
 ```
 
 oder via Skript: [export_workflows.bat](export_workflows.bat). Danach `git add workflows/all_workflows.json`.
 
-> Pflicht-Flags `-p docker` und `--env-file Docker\.env` siehe [docs/testing.md](docs/testing.md#setup-besonderheit-docker-compose-mit-zwei-flags).
+> `.env` liegt direkt neben `docker-compose.yml` in `Source/` und wird von compose automatisch eingelesen — keine zusätzlichen Flags nötig.
 
 ---
 
