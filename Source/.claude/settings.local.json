@@ -15,7 +15,9 @@
       "PowerShell(Remove-Item *)",
       "PowerShell(Rename-Item *)",
       "PowerShell(Restart-Service *)",
-      "PowerShell(Remove-ItemProperty *)"
+      "PowerShell(Remove-ItemProperty *)",
+      "Bash(docker exec n8n-postgres-1 *)",
+      "PowerShell(docker exec source-n8n_postgres-1 *)"
     ]
   }
 }
