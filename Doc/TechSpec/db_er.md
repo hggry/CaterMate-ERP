@@ -63,7 +63,17 @@ erDiagram
         decimal SalesPricePerPerson
         decimal PurchaseCostPerPerson
         varchar Allergens
+        varchar Tags
+        varchar Eignung
+        text Beschreibung
         datetime CreatedAt
+    }
+
+    FilterVocabulary {
+        varchar field PK
+        varchar value PK
+        varchar group_label
+        int sort_order
     }
 
     Ingredients {
@@ -254,20 +264,97 @@ Zentrale Entität. Jeder Auftrag durchläuft die Status-Pipeline.
 
 ### MenuItems
 
-Menüartikel-Stammdaten. Basis für Angebote, Einkaufslisten und Gerichtsvorschläge.
+Menüartikel-Stammdaten. Basis für Angebote, Einkaufslisten und Gerichtsvorschläge. Die Spalten `Category`, `Eignung` und `Tags` werden vom KI-Agenten zur Gerichtsauswahl verwendet — die zulässigen Werte sind zentral in der Tabelle `FilterVocabulary` definiert und werden bei jedem INSERT/UPDATE per Trigger (`trg_menuitems_bi`, `trg_menuitems_bu`) validiert und normalisiert (lowercase, Leerzeichen um Kommas entfernt).
 
-| Spalte                | Typ           | Constraints             | Beschreibung                                               |
-| --------------------- | ------------- | ----------------------- | ---------------------------------------------------------- |
-| Id                    | INT           | PK, AUTO_INCREMENT      |                                                            |
-| Name                  | VARCHAR(200)  | NOT NULL                |                                                            |
-| Category              | VARCHAR(50)   | NOT NULL                | Vorspeise, Hauptgang, Dessert, Getränk, GetränkAlkoholisch |
-| SalesPricePerPerson   | DECIMAL(10,2) | NOT NULL                | Verkaufspreis pro Person                                   |
-| PurchaseCostPerPerson | DECIMAL(10,2) | NOT NULL                | Einkaufspreis pro Person (manuell oder aus Stückliste)     |
-| Allergens             | VARCHAR(500)  | NULL                    | Kommagetrennte Liste (z.B. Gluten,Ei,Milch)                |
-| CreatedAt             | DATETIME      | NOT NULL, DEFAULT NOW() |                                                            |
+| Spalte                | Typ           | Constraints             | Beschreibung                                                                                              |
+| --------------------- | ------------- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| Id                    | INT           | PK, AUTO_INCREMENT      |                                                                                                           |
+| Name                  | VARCHAR(200)  | NOT NULL                |                                                                                                           |
+| Category              | VARCHAR(50)   | NOT NULL                | Genau ein Wert aus `FilterVocabulary WHERE field='category'` (z.B. `hauptgang`, `dessert`, `gebäck`)      |
+| SalesPricePerPerson   | DECIMAL(10,2) | NOT NULL                | Verkaufspreis pro Person                                                                                  |
+| PurchaseCostPerPerson | DECIMAL(10,2) | NOT NULL                | Einkaufspreis pro Person (manuell oder aus Stückliste)                                                    |
+| Allergens             | VARCHAR(500)  | NULL                    | Kommagetrennte Liste (z.B. `gluten,ei,milch`)                                                             |
+| Tags                  | VARCHAR(500)  | NULL                    | Comma-separated (ohne Leerzeichen), jeder Token aus `FilterVocabulary WHERE field='tag'`                  |
+| Eignung               | VARCHAR(300)  | NULL                    | Comma-separated (ohne Leerzeichen), jeder Token aus `FilterVocabulary WHERE field='eignung'`              |
+| Beschreibung          | TEXT          | NULL                    | Freitext-Beschreibung des Gerichts (für Angebot/PDF)                                                      |
+| CreatedAt             | DATETIME      | NOT NULL, DEFAULT NOW() |                                                                                                           |
 
-*USt.-Logik:* Kategorie GetränkAlkoholisch → 20 %; alle anderen → 10 %.
+*Speicherformat:* Alle Werte in den Vokabular-Spalten sind kleingeschrieben; Multi-Value-Spalten sind kommagetrennt **ohne** Leerzeichen (z.B. `mittag,abend,business`). Der Trigger normalisiert abweichende Eingaben automatisch oder lehnt ungültige Tokens mit `SQLSTATE 45000` ab.
 
+
+---
+
+### FilterVocabulary
+
+Zentrales kontrolliertes Vokabular für die Filterspalten der `MenuItems`-Tabelle (`Category`, `Eignung`, `Tags`). Single source of truth — wird sowohl von den `MenuItems`-Trigger zur Validierung als auch vom KI-Agenten gelesen, um zu wissen, welche Werte er bei der Gerichtsauswahl verwenden darf.
+
+Keine FK-Beziehung zu `MenuItems`, da `Eignung` und `Tags` als comma-separated Strings gespeichert werden — die Verknüpfung erfolgt logisch über die Trigger.
+
+| Spalte      | Typ         | Constraints              | Beschreibung                                                          |
+| ----------- | ----------- | ------------------------ | --------------------------------------------------------------------- |
+| field       | VARCHAR(20) | PK (Teil 1)              | Zielspalte in MenuItems: `category`, `eignung` oder `tag`             |
+| value       | VARCHAR(50) | PK (Teil 2)              | Erlaubter Wert (immer lowercase)                                      |
+| group_label | VARCHAR(50) | NULL                     | Semantische Gruppe für UI/KI-Prompts (z.B. `tageszeit`, `küche`)      |
+| sort_order  | INT         | NOT NULL, DEFAULT 0      | Reihenfolge bei der Anzeige                                           |
+
+**Tabelleneigenschaften:** `ENGINE=InnoDB`, `CHARSET=utf8mb4`, `COLLATE=utf8mb4_unicode_ci` (passend zu `MenuItems`).
+
+#### Gültige Werte
+
+**`field = 'category'`** (genau ein Wert pro `MenuItems`-Zeile)
+
+| value       | group_label |
+| ----------- | ----------- |
+| vorspeise   | gang        |
+| suppe       | gang        |
+| hauptgang   | gang        |
+| beilage     | gang        |
+| dessert     | gang        |
+| gebäck      | gang        |
+| getränk     | gang        |
+
+**`field = 'eignung'`** (comma-separated in `MenuItems.Eignung`)
+
+| value      | group_label  |
+| ---------- | ------------ |
+| frühstück  | tageszeit    |
+| mittag     | tageszeit    |
+| nachmittag | tageszeit    |
+| abend      | tageszeit    |
+| business   | anlass       |
+| festlich   | anlass       |
+| empfang    | anlass       |
+| casual     | anlass       |
+| buffet     | servierform  |
+| sommer     | saison       |
+| winter     | saison       |
+
+**`field = 'tag'`** (comma-separated in `MenuItems.Tags`)
+
+| value          | group_label |
+| -------------- | ----------- |
+| österreichisch | küche       |
+| italienisch    | küche       |
+| mediterran     | küche       |
+| asiatisch      | küche       |
+| international  | küche       |
+| warm           | temperatur  |
+| kalt           | temperatur  |
+| vegetarisch    | diät        |
+| vegan          | diät        |
+| glutenfrei     | diät        |
+| laktosefrei    | diät        |
+| süß            | geschmack   |
+| herzhaft       | geschmack   |
+| cremig         | geschmack   |
+| traditionell   | stil        |
+| klassisch      | stil        |
+| modern         | stil        |
+| elegant        | stil        |
+| fingerfood     | format      |
+| fisch          | hauptzutat  |
+| fleisch        | hauptzutat  |
+| geflügel       | hauptzutat  |
 
 ---
 
