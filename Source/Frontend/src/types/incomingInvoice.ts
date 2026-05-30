@@ -3,6 +3,9 @@
 export interface IncomingInvoiceDto {
   id: number
   status: string
+  fileName?: string | null
+  createdAt?: string
+  processedAt?: string | null
 }
 
 export interface PriceSuggestionDto {

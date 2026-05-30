@@ -11,12 +11,16 @@ public class IncomingInvoiceRepository : IIncomingInvoiceRepository
         INSERT INTO IncomingInvoices (FilePath, Status) VALUES (@FilePath, @Status);
         SELECT LAST_INSERT_ID();";
     private const string SelectById = "SELECT * FROM IncomingInvoices WHERE Id = @Id LIMIT 1";
+    private const string SelectAllInvoices = "SELECT * FROM IncomingInvoices ORDER BY Id DESC";
     private const string SelectSuggestions = "SELECT * FROM IncomingInvoiceSuggestions WHERE IncomingInvoiceId = @InvoiceId";
+    private const string SelectAllSuggestions = "SELECT * FROM IncomingInvoiceSuggestions ORDER BY Id";
+    private const string SelectSuggestionById = "SELECT * FROM IncomingInvoiceSuggestions WHERE Id = @Id LIMIT 1";
     private const string InsertSuggestion = @"
         INSERT INTO IncomingInvoiceSuggestions (IncomingInvoiceId, IngredientId, IngredientName, CurrentPrice, SuggestedPrice)
         VALUES (@IncomingInvoiceId, @IngredientId, @IngredientName, @CurrentPrice, @SuggestedPrice)";
     private const string UpdateStatus = "UPDATE IncomingInvoices SET Status = @Status, ProcessedAt = NOW() WHERE Id = @Id";
     private const string UpdateDecision = "UPDATE IncomingInvoiceSuggestions SET Accepted = @Accepted WHERE Id = @Id";
+    private const string DeleteSuggestion = "DELETE FROM IncomingInvoiceSuggestions WHERE Id = @Id";
     private const string UpdateIngredientPrice = "UPDATE Ingredients SET PurchasePricePerUnit = @Price WHERE Id = @Id";
 
     public IncomingInvoiceRepository(DapperContext context) => _context = context;
@@ -33,10 +37,34 @@ public class IncomingInvoiceRepository : IIncomingInvoiceRepository
         return await conn.QueryFirstOrDefaultAsync<IncomingInvoiceEntity>(SelectById, new { Id = id });
     }
 
+    public async Task<IEnumerable<IncomingInvoiceEntity>> GetAllInvoicesAsync()
+    {
+        using var conn = _context.CreateConnection();
+        return await conn.QueryAsync<IncomingInvoiceEntity>(SelectAllInvoices);
+    }
+
     public async Task<IEnumerable<IncomingInvoiceSuggestionEntity>> GetSuggestionsByInvoiceIdAsync(int invoiceId)
     {
         using var conn = _context.CreateConnection();
         return await conn.QueryAsync<IncomingInvoiceSuggestionEntity>(SelectSuggestions, new { InvoiceId = invoiceId });
+    }
+
+    public async Task<IEnumerable<IncomingInvoiceSuggestionEntity>> GetAllSuggestionsAsync()
+    {
+        using var conn = _context.CreateConnection();
+        return await conn.QueryAsync<IncomingInvoiceSuggestionEntity>(SelectAllSuggestions);
+    }
+
+    public async Task<IncomingInvoiceSuggestionEntity?> GetSuggestionByIdAsync(int suggestionId)
+    {
+        using var conn = _context.CreateConnection();
+        return await conn.QueryFirstOrDefaultAsync<IncomingInvoiceSuggestionEntity>(SelectSuggestionById, new { Id = suggestionId });
+    }
+
+    public async Task DeleteSuggestionAsync(int suggestionId)
+    {
+        using var conn = _context.CreateConnection();
+        await conn.ExecuteAsync(DeleteSuggestion, new { Id = suggestionId });
     }
 
     public async Task SaveSuggestionsAsync(int invoiceId, IEnumerable<IncomingInvoiceSuggestionEntity> suggestions)

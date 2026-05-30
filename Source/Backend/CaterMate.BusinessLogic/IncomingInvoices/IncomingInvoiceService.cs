@@ -46,6 +46,26 @@ public class IncomingInvoiceService : IIncomingInvoiceService
         return new IncomingInvoiceDto { Id = id, Status = "Pending" };
     }
 
+    public async Task<IEnumerable<IncomingInvoiceDto>> GetAllInvoicesAsync()
+    {
+        var invoices = await _repo.GetAllInvoicesAsync();
+        return invoices.Select(i => new IncomingInvoiceDto
+        {
+            Id = i.Id,
+            Status = i.Status,
+            FileName = StripGuidPrefix(Path.GetFileName(i.FilePath)),
+            CreatedAt = i.CreatedAt,
+            ProcessedAt = i.ProcessedAt
+        });
+    }
+
+    // Stored files are named "{guid}_{originalName}" — show only the original part.
+    private static string StripGuidPrefix(string fileName)
+    {
+        var idx = fileName.IndexOf('_');
+        return idx >= 0 && idx < fileName.Length - 1 ? fileName[(idx + 1)..] : fileName;
+    }
+
     public async Task<IEnumerable<PriceSuggestionDto>> GetSuggestionsAsync(int id)
     {
         var invoice = await _repo.GetByIdAsync(id)
@@ -56,6 +76,29 @@ public class IncomingInvoiceService : IIncomingInvoiceService
 
         var suggestions = await _repo.GetSuggestionsByInvoiceIdAsync(id);
         return suggestions.Select(MapToDto);
+    }
+
+    public async Task<IEnumerable<PriceSuggestionDto>> GetAllSuggestionsAsync()
+    {
+        var suggestions = await _repo.GetAllSuggestionsAsync();
+        return suggestions.Select(MapToDto);
+    }
+
+    public async Task AcceptSuggestionAsync(int suggestionId)
+    {
+        var suggestion = await _repo.GetSuggestionByIdAsync(suggestionId)
+            ?? throw new KeyNotFoundException($"Suggestion {suggestionId} not found");
+
+        await _repo.UpdateIngredientPriceAsync(suggestion.IngredientId, suggestion.SuggestedPrice);
+        await _repo.DeleteSuggestionAsync(suggestionId);
+    }
+
+    public async Task DiscardSuggestionAsync(int suggestionId)
+    {
+        _ = await _repo.GetSuggestionByIdAsync(suggestionId)
+            ?? throw new KeyNotFoundException($"Suggestion {suggestionId} not found");
+
+        await _repo.DeleteSuggestionAsync(suggestionId);
     }
 
     public async Task ConfirmAsync(int id, ConfirmSuggestionsRequest request)
@@ -107,9 +150,12 @@ public class IncomingInvoiceService : IIncomingInvoiceService
             var fileContent = new ByteArrayContent(fileBytes);
             fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
             form.Add(fileContent, "file", Path.GetFileName(filePath));
-            form.Add(new StringContent(invoiceId.ToString()), "incomingInvoiceId");
 
-            await client.PostAsync(webhookUrl, form);
+            // The invoice id goes as a query parameter — multipart text fields do not
+            // reliably reach n8n's $json.body, but query params always land in $json.query.
+            var url = webhookUrl + (webhookUrl.Contains('?') ? "&" : "?") + "incomingInvoiceId=" + invoiceId;
+
+            await client.PostAsync(url, form);
         }
         catch (Exception ex)
         {

@@ -1,24 +1,32 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter, type RouteLocationRaw } from 'vue-router'
 import Button from 'primevue/button'
+import Badge from 'primevue/badge'
 import { useAuthStore } from '@/stores/authStore'
+import { useSuggestionsStore } from '@/stores/suggestionsStore'
 
 interface NavItem {
   label: string
   icon: string
   to: RouteLocationRaw
+  badge?: boolean
 }
 
 const router = useRouter()
 const auth = useAuthStore()
+const suggestions = useSuggestionsStore()
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', icon: 'pi pi-chart-bar', to: { name: 'dashboard' } },
   { label: 'Aufträge', icon: 'pi pi-list', to: { name: 'orders' } },
   { label: 'Eingangsrechnungen', icon: 'pi pi-file-import', to: { name: 'incoming-invoices' } },
+  { label: 'Preisänderungsvorschläge', icon: 'pi pi-tags', to: { name: 'price-suggestions' }, badge: true },
   { label: 'Menüartikel', icon: 'pi pi-book', to: { name: 'menu-items' } },
   { label: 'Zutaten', icon: 'pi pi-shopping-cart', to: { name: 'ingredients' } },
 ]
+
+onMounted(() => suggestions.refresh())
 
 function logout(): void {
   auth.logout()
@@ -39,7 +47,13 @@ function logout(): void {
         active-class="app-sidebar__link--active"
       >
         <i :class="item.icon" />
-        <span>{{ item.label }}</span>
+        <span class="app-sidebar__label">{{ item.label }}</span>
+        <Badge
+          v-if="item.badge && suggestions.count > 0"
+          :value="suggestions.count"
+          severity="danger"
+          class="app-sidebar__badge"
+        />
       </RouterLink>
     </nav>
 
@@ -64,7 +78,7 @@ function logout(): void {
 .app-sidebar {
   display: flex;
   flex-direction: column;
-  width: 16rem;
+  width: 18rem;
   height: 100vh;
   padding: 1rem;
   box-sizing: border-box;
@@ -95,6 +109,23 @@ function logout(): void {
   border-radius: var(--p-border-radius, 6px);
   color: var(--p-text-color);
   text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.app-sidebar__link i {
+  flex-shrink: 0;
+}
+
+.app-sidebar__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-sidebar__badge {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .app-sidebar__link:hover {

@@ -1,155 +1,112 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import FileUpload, { type FileUploadUploaderEvent } from 'primevue/fileupload'
-import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
 import Card from 'primevue/card'
+import Tag from 'primevue/tag'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
-import SuggestionRow from '@/components/incoming/SuggestionRow.vue'
 import { incomingInvoicesApi } from '@/services/incomingInvoicesApi'
+import { useApi } from '@/composables/useApi'
+import { useFormat } from '@/composables/useFormat'
 import { useToast } from '@/composables/useToast'
-import { ApiError, apiErrorMessage } from '@/types/api'
-import type { PriceSuggestionDto } from '@/types/incomingInvoice'
+import { apiErrorMessage } from '@/types/api'
 
-type Phase = 'idle' | 'processing' | 'review' | 'done'
-
+const { data: invoices, loading, error, execute } = useApi(incomingInvoicesApi.list)
+const { formatDateTime } = useFormat()
 const toast = useToast()
 
-const phase = ref<Phase>('idle')
-const invoiceId = ref<number | null>(null)
-const suggestions = ref<PriceSuggestionDto[]>([])
-const decisions = reactive<Record<number, boolean | null>>({})
-const confirming = ref(false)
+const uploading = ref(false)
 
-async function pollSuggestions(id: number): Promise<PriceSuggestionDto[] | null> {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    try {
-      const result = await incomingInvoicesApi.getSuggestions(id)
-      if (result.length > 0) return result
-    } catch (e) {
-      // 404/409 mean the OCR job is still running — keep polling.
-      if (!(e instanceof ApiError && (e.status === 404 || e.status === 409))) {
-        throw e
-      }
-    }
+onMounted(() => execute())
+
+function statusInfo(status: string): { label: string; severity: 'info' | 'success' | 'secondary' } {
+  switch (status) {
+    case 'Pending':
+      return { label: 'Hochgeladen', severity: 'info' }
+    case 'Ready':
+      return { label: 'Geprüft', severity: 'success' }
+    default:
+      return { label: status, severity: 'secondary' }
   }
-  return null
 }
 
 async function onUpload(event: FileUploadUploaderEvent): Promise<void> {
   const file = Array.isArray(event.files) ? event.files[0] : event.files
   if (!file) return
 
-  phase.value = 'processing'
+  uploading.value = true
   try {
-    const created = await incomingInvoicesApi.upload(file)
-    invoiceId.value = created.id
-    const result = await pollSuggestions(created.id)
-    if (!result) {
-      toast.error('Die Verarbeitung dauert ungewöhnlich lange. Bitte später erneut versuchen.')
-      phase.value = 'idle'
-      return
-    }
-    suggestions.value = result
-    for (const suggestion of result) {
-      decisions[suggestion.id] = null
-    }
-    phase.value = 'review'
-  } catch (e) {
-    toast.error(apiErrorMessage(e))
-    phase.value = 'idle'
-  }
-}
-
-async function confirmDecisions(): Promise<void> {
-  if (invoiceId.value === null) return
-  const decided = Object.entries(decisions)
-    .filter(([, accepted]) => accepted !== null)
-    .map(([id, accepted]) => ({ suggestionId: Number(id), accepted: accepted as boolean }))
-
-  if (decided.length === 0) {
-    toast.error('Bitte mindestens eine Position bewerten.')
-    return
-  }
-
-  confirming.value = true
-  try {
-    await incomingInvoicesApi.confirm(invoiceId.value, { decisions: decided })
-    toast.success('Preisänderungen wurden übernommen.')
-    phase.value = 'done'
+    await incomingInvoicesApi.upload(file)
+    toast.success(
+      'Rechnung hochgeladen. Sie wird im Hintergrund geprüft — etwaige Preisänderungsvorschläge erscheinen im Tab „Preisänderungsvorschläge".',
+    )
+    await execute()
   } catch (e) {
     toast.error(apiErrorMessage(e))
   } finally {
-    confirming.value = false
-  }
-}
-
-function reset(): void {
-  phase.value = 'idle'
-  invoiceId.value = null
-  suggestions.value = []
-  for (const key of Object.keys(decisions)) {
-    delete decisions[Number(key)]
+    uploading.value = false
   }
 }
 </script>
 
 <template>
   <div class="incoming-view">
-    <h1>Eingangsrechnung erfassen</h1>
+    <h1>Eingangsrechnungen</h1>
 
-    <Card v-if="phase === 'idle'">
+    <Card>
       <template #content>
-        <p>Lieferantenrechnung als Bild oder PDF hochladen — die KI wertet die Positionen aus.</p>
-        <FileUpload
-          mode="basic"
-          custom-upload
-          auto
-          accept="image/*,application/pdf"
-          :max-file-size="10000000"
-          choose-label="Rechnung hochladen"
-          @uploader="onUpload"
-        />
+        <p>Lieferantenrechnung als Bild oder PDF hochladen — die KI prüft die Positionen im Hintergrund.</p>
+        <div class="incoming-view__upload">
+          <FileUpload
+            mode="basic"
+            custom-upload
+            auto
+            accept="image/*,application/pdf"
+            :max-file-size="10000000"
+            choose-label="Rechnung hochladen"
+            :disabled="uploading"
+            @uploader="onUpload"
+          />
+          <ProgressSpinner v-if="uploading" style="width: 2rem; height: 2rem" />
+        </div>
       </template>
     </Card>
 
-    <div v-else-if="phase === 'processing'" class="incoming-view__processing">
+    <Message severity="info" :closable="false">
+      Preisänderungsvorschläge entstehen erst, wenn ein Einkaufspreis mehrfach in Folge deutlich über dem Referenzwert
+      liegt. Sie erscheinen dann im Tab „Preisänderungsvorschläge" — nicht zwingend nach jedem Upload.
+    </Message>
+
+    <Message v-if="error" severity="error" :closable="false">
+      Eingangsrechnungen konnten nicht geladen werden.
+    </Message>
+
+    <div v-if="loading" class="incoming-view__center">
       <ProgressSpinner style="width: 3rem; height: 3rem" />
-      <p>Die Rechnung wird verarbeitet …</p>
     </div>
 
-    <template v-else-if="phase === 'review'">
-      <Message severity="info" :closable="false">
-        Bitte prüfen Sie die vorgeschlagenen Einkaufspreis-Änderungen Position für Position.
-      </Message>
-      <Card>
-        <template #content>
-          <SuggestionRow
-            v-for="suggestion in suggestions"
-            :key="suggestion.id"
-            v-model="decisions[suggestion.id]"
-            :suggestion="suggestion"
-          />
+    <DataTable v-else :value="invoices ?? []" paginator :rows="15" data-key="id">
+      <template #empty>Noch keine Eingangsrechnungen hochgeladen.</template>
+      <Column field="id" header="Nr." style="width: 5rem">
+        <template #body="{ data }">#{{ data.id }}</template>
+      </Column>
+      <Column field="fileName" header="Datei">
+        <template #body="{ data }">{{ data.fileName ?? '—' }}</template>
+      </Column>
+      <Column header="Status" style="width: 11rem">
+        <template #body="{ data }">
+          <Tag :value="statusInfo(data.status).label" :severity="statusInfo(data.status).severity" />
         </template>
-      </Card>
-      <div class="incoming-view__actions">
-        <Button label="Abbrechen" severity="secondary" text @click="reset" />
-        <Button
-          label="Bestätigen"
-          icon="pi pi-check"
-          :loading="confirming"
-          @click="confirmDecisions"
-        />
-      </div>
-    </template>
-
-    <template v-else>
-      <Message severity="success" :closable="false">
-        Die Stammdaten wurden aktualisiert.
-      </Message>
-      <Button label="Weitere Rechnung erfassen" icon="pi pi-plus" @click="reset" />
-    </template>
+      </Column>
+      <Column header="Hochgeladen am" style="width: 13rem">
+        <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
+      </Column>
+      <Column header="Geprüft am" style="width: 13rem">
+        <template #body="{ data }">{{ formatDateTime(data.processedAt) }}</template>
+      </Column>
+    </DataTable>
   </div>
 </template>
 
@@ -164,17 +121,16 @@ function reset(): void {
   margin: 0;
 }
 
-.incoming-view__processing {
+.incoming-view__upload {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 3rem;
+  margin-top: 0.5rem;
 }
 
-.incoming-view__actions {
+.incoming-view__center {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
+  justify-content: center;
+  padding: 3rem;
 }
 </style>

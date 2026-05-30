@@ -21,11 +21,39 @@ public class IncomingInvoicesController : ControllerBase
         return CreatedAtAction(nameof(GetSuggestions), new { id = dto.Id }, dto);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var invoices = await _service.GetAllInvoicesAsync();
+        return Ok(invoices);
+    }
+
     [HttpGet("{id:int}/suggestions")]
     public async Task<IActionResult> GetSuggestions(int id)
     {
         var suggestions = await _service.GetSuggestionsAsync(id);
         return Ok(suggestions);
+    }
+
+    [HttpGet("suggestions")]
+    public async Task<IActionResult> GetAllSuggestions()
+    {
+        var suggestions = await _service.GetAllSuggestionsAsync();
+        return Ok(suggestions);
+    }
+
+    [HttpPost("suggestions/{id:int}/accept")]
+    public async Task<IActionResult> AcceptSuggestion(int id)
+    {
+        await _service.AcceptSuggestionAsync(id);
+        return NoContent();
+    }
+
+    [HttpPost("suggestions/{id:int}/discard")]
+    public async Task<IActionResult> DiscardSuggestion(int id)
+    {
+        await _service.DiscardSuggestionAsync(id);
+        return NoContent();
     }
 
     [HttpPost("{id:int}/confirm")]
