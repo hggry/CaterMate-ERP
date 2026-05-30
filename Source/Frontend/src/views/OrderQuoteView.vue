@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
+import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import PositionsTable from '@/components/common/PositionsTable.vue'
@@ -21,9 +22,13 @@ const quote = ref<QuoteDto | null>(null)
 const loading = ref(false)
 const loadError = ref(false)
 const busy = ref(false)
+const sending = ref(false)
+const sendDialogVisible = ref(false)
 
 const canCreate = computed(() => order.value?.status === 'Geprüft' && !quote.value)
 const canRelease = computed(() => order.value?.status === 'Geprüft' && !!quote.value)
+// Sending is only possible once the quote has been released.
+const canSend = computed(() => order.value?.status === 'AngebotErstellt' && !!quote.value)
 const overBudget = computed(() =>
   quote.value !== null &&
   order.value?.budget != null &&
@@ -60,6 +65,19 @@ async function createQuote(): Promise<void> {
   }
 }
 
+async function sendQuote(): Promise<void> {
+  sending.value = true
+  try {
+    await quotesApi.sendToCustomer(orderId)
+    toast.success('Angebot wurde an den Kunden gesendet.')
+    sendDialogVisible.value = false
+  } catch (e) {
+    toast.error(apiErrorMessage(e))
+  } finally {
+    sending.value = false
+  }
+}
+
 async function saveQuote(): Promise<void> {
   if (!quote.value) return
   busy.value = true
@@ -79,6 +97,8 @@ async function releaseQuote(): Promise<void> {
     await ordersApi.update(orderId, { status: 'AngebotErstellt' })
     await reload()
     toast.success('Angebot wurde freigegeben.')
+    // Offer to send the released quote to the customer right away.
+    sendDialogVisible.value = true
   } catch (e) {
     toast.error(apiErrorMessage(e))
   } finally {
@@ -167,6 +187,13 @@ async function downloadPdf(): Promise<void> {
           @click="downloadPdf"
         />
         <Button
+          v-if="canSend"
+          label="Angebot an Kunde senden"
+          icon="pi pi-send"
+          :loading="sending"
+          @click="sendQuote"
+        />
+        <Button
           v-if="canRelease"
           label="Angebot freigeben"
           icon="pi pi-check"
@@ -175,6 +202,32 @@ async function downloadPdf(): Promise<void> {
         />
       </div>
     </template>
+
+    <Dialog
+      v-model:visible="sendDialogVisible"
+      header="Angebot versenden"
+      modal
+      :style="{ width: '28rem' }"
+    >
+      <p class="quote-view__dialog-text">
+        Das Angebot wurde erstellt. Möchten Sie es jetzt an den Kunden senden?
+      </p>
+      <div class="quote-view__dialog-actions">
+        <Button
+          label="Später"
+          severity="secondary"
+          text
+          :disabled="sending"
+          @click="sendDialogVisible = false"
+        />
+        <Button
+          label="Angebot an Kunde senden"
+          icon="pi pi-send"
+          :loading="sending"
+          @click="sendQuote"
+        />
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -211,6 +264,17 @@ async function downloadPdf(): Promise<void> {
 }
 
 .quote-view__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.quote-view__dialog-text {
+  margin: 0 0 1.5rem;
+}
+
+.quote-view__dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;

@@ -8,4 +8,5 @@ public interface IQuoteService
     Task<QuoteDto> GetByOrderIdAsync(int orderId);
     Task<QuoteDto> UpdateAsync(int orderId, QuoteDto dto);
     Task<byte[]> GetPdfBytesAsync(int orderId);
+    Task SendToCustomerAsync(int orderId);
 }

@@ -14,4 +14,8 @@ export const quotesApi = {
 
   downloadPdf: (orderId: number): Promise<void> =>
     downloadBlob(`/orders/${orderId}/quote/pdf`, `Angebot_${orderId}.pdf`),
+
+  // Triggers the backend to send the quote PDF to the customer via webhook.
+  sendToCustomer: (orderId: number): Promise<void> =>
+    http.post(`/orders/${orderId}/quote/send`).then(() => undefined),
 }

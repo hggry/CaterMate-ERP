@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using CaterMate.BusinessLogic.Pdf;
 using CaterMate.Db.Entities;
 using CaterMate.Db.Repositories;
@@ -12,20 +13,25 @@ public class QuoteService : IQuoteService
     private readonly IOrderRepository _orderRepo;
     private readonly ICustomerRepository _customerRepo;
     private readonly IPdfService _pdfService;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly decimal _adminFee;
+    private readonly string _sendQuoteWebhookUrl;
 
     public QuoteService(
         IQuoteRepository quoteRepo,
         IOrderRepository orderRepo,
         ICustomerRepository customerRepo,
         IPdfService pdfService,
+        IHttpClientFactory httpClientFactory,
         IConfiguration config)
     {
         _quoteRepo = quoteRepo;
         _orderRepo = orderRepo;
         _customerRepo = customerRepo;
         _pdfService = pdfService;
+        _httpClientFactory = httpClientFactory;
         _adminFee = decimal.TryParse(config["VERWALTUNGSPAUSCHALE"], out var fee) ? fee : 200m;
+        _sendQuoteWebhookUrl = config["QUOTE_WEBHOOK_URL"] ?? "";
     }
 
     public async Task<QuoteDto> GenerateAsync(int orderId)
@@ -97,6 +103,31 @@ public class QuoteService : IQuoteService
             ?? throw new KeyNotFoundException($"Order {orderId} not found");
         var customer = await _customerRepo.GetByIdAsync(order.CustomerId);
         return _pdfService.GenerateQuotePdf(dto, customer?.Name ?? "", order.EventDate);
+    }
+
+    public async Task SendToCustomerAsync(int orderId)
+    {
+        if (string.IsNullOrWhiteSpace(_sendQuoteWebhookUrl))
+            throw new InvalidOperationException("QUOTE_WEBHOOK_URL ist nicht konfiguriert.");
+
+        var order = await _orderRepo.GetByIdAsync(orderId)
+            ?? throw new KeyNotFoundException($"Order {orderId} not found");
+        var customer = await _customerRepo.GetByIdAsync(order.CustomerId);
+        var pdfBytes = await GetPdfBytesAsync(orderId);
+
+        // Send the quote PDF as binary (multipart/form-data) to the n8n webhook,
+        // which handles the actual delivery to the customer.
+        using var form = new MultipartFormDataContent();
+        var pdfContent = new ByteArrayContent(pdfBytes);
+        pdfContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        form.Add(pdfContent, "file", $"Angebot_{orderId}.pdf");
+        form.Add(new StringContent(orderId.ToString()), "orderId");
+        form.Add(new StringContent(customer?.Name ?? ""), "customerName");
+        form.Add(new StringContent(customer?.Phone ?? ""), "customerPhone");
+
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.PostAsync(_sendQuoteWebhookUrl, form);
+        response.EnsureSuccessStatusCode();
     }
 
     private static List<QuotePositionEntity> BuildPositions(IEnumerable<MenuItemEntity> menuItems, int guestCount) =>

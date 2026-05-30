@@ -41,4 +41,11 @@ public class QuotesController : ControllerBase
         var bytes = await _quoteService.GetPdfBytesAsync(orderId);
         return File(bytes, "application/pdf", $"Angebot_{orderId}.pdf");
     }
+
+    [HttpPost("send")]
+    public async Task<IActionResult> SendToCustomer(int orderId)
+    {
+        await _quoteService.SendToCustomerAsync(orderId);
+        return NoContent();
+    }
 }
