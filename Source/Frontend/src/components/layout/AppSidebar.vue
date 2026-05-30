@@ -66,14 +66,26 @@ function logout(): void {
     </nav>
 
     <div class="app-sidebar__footer">
-      <span class="app-sidebar__user">
-        <i class="pi pi-user" />
-        {{ auth.username ?? 'Unbekannt' }}
-      </span>
-      <button type="button" class="app-sidebar__theme-toggle" @click="theme.toggle">
-        <i :class="theme.isDark ? 'pi pi-sun' : 'pi pi-moon'" />
-        <span>{{ theme.isDark ? 'Hell' : 'Dunkel' }}</span>
-      </button>
+      <!-- User row + theme toggle on one line -->
+      <div class="app-sidebar__footer-row">
+        <span class="app-sidebar__user">
+          <i class="pi pi-user" />
+          {{ auth.username ?? 'Unbekannt' }}
+        </span>
+        <button
+          type="button"
+          class="app-sidebar__theme-toggle"
+          :class="{ 'app-sidebar__theme-toggle--dark': theme.isDark }"
+          :title="theme.isDark ? 'Light Mode' : 'Dark Mode'"
+          @click="theme.toggle"
+        >
+          <span class="app-sidebar__toggle-track">
+            <span class="app-sidebar__toggle-thumb">
+              <i class="app-sidebar__toggle-icon pi" :class="theme.isDark ? 'pi-moon' : 'pi-sun'" />
+            </span>
+          </span>
+        </button>
+      </div>
       <Button
         label="Abmelden"
         icon="pi pi-sign-out"
@@ -178,33 +190,76 @@ function logout(): void {
   border-top: 1px solid var(--p-content-border-color);
 }
 
+/* User name and theme toggle on the same baseline */
+.app-sidebar__footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+}
+
 .app-sidebar__user {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0 0.5rem;
   font-size: 0.875rem;
   color: var(--p-text-muted-color);
 }
 
+/* ── Pill toggle ──────────────────────────────────────────────────────── */
 .app-sidebar__theme-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid transparent;
-  border-radius: var(--p-border-radius, 6px);
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
   background: none;
   cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--p-text-muted-color);
-  text-align: left;
-  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.app-sidebar__theme-toggle:hover {
-  border-color: var(--p-primary-color);
+.app-sidebar__toggle-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 3rem;
+  height: 1.625rem;
+  border-radius: 999px;
+  background: var(--p-content-border-color);
+  transition: background 0.25s ease;
+}
+
+.app-sidebar__theme-toggle--dark .app-sidebar__toggle-track {
+  background: var(--p-primary-color);
+}
+
+.app-sidebar__toggle-thumb {
+  position: absolute;
+  left: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s ease;
+}
+
+.app-sidebar__theme-toggle--dark .app-sidebar__toggle-thumb {
+  transform: translateX(1.375rem);
+}
+
+.app-sidebar__toggle-icon {
+  font-size: 0.6875rem;
+  color: var(--p-text-muted-color);
+  transition: color 0.25s ease;
+}
+
+.app-sidebar__theme-toggle--dark .app-sidebar__toggle-icon {
   color: var(--p-primary-color);
+}
+
+.app-sidebar__theme-toggle:hover .app-sidebar__toggle-track {
+  opacity: 0.85;
 }
 
 @media (max-width: 48rem) {

@@ -25,7 +25,8 @@ export const CaterMatePreset = definePreset(Aura, {
       950: '#1a2407',
     },
     colorScheme: {
-      // Dark mode uses a cool-neutral dark grey scale — readable, settled, not brown.
+      // Dark mode: cool-neutral grey scale with clear page → card → elevated progression.
+      // surface.900 = card/panel bg  |  surface.950 = page body bg (darker, set via --catermate-bg)
       dark: {
         surface: {
           0:   '#ffffff',
@@ -36,10 +37,10 @@ export const CaterMatePreset = definePreset(Aura, {
           400: '#6e6e7e',
           500: '#4e4e5a',
           600: '#3a3a44',
-          700: '#2a2a32',  // primary card/panel surface
-          800: '#202026',
-          900: '#18181e',  // page background
-          950: '#111116',
+          700: '#2a2a34',  // elevated elements (nested cards, hover)
+          800: '#202029',  // subtle elevation
+          900: '#18181f',  // card / panel background  ← --p-content-background
+          950: '#0d0d12',  // page body background     ← --catermate-bg in dark mode
         },
       },
     },
