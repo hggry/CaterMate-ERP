@@ -6,7 +6,7 @@ import { ORDER_STATUSES, type OrderStatus } from '@/types/order'
 const props = defineProps<{ ordersByStatus: Partial<Record<OrderStatus, number>> }>()
 const emit = defineEmits<{ select: [status: OrderStatus] }>()
 
-const { labelFor } = useOrderStatus()
+const { labelFor, tagStyleFor } = useOrderStatus()
 
 // The pipeline tracks open work, so the completed stages ("Durchgeführt",
 // "Abgerechnet") are excluded.
@@ -20,6 +20,7 @@ const rows = computed(() => {
     status,
     label: labelFor(status),
     count: counts[i],
+    color: tagStyleFor(status).background,
     // Floor bar width so non-zero stages stay visible even when tiny.
     width: counts[i] === 0 ? 0 : Math.max(8, Math.round((counts[i] / max) * 100)),
   }))
@@ -37,7 +38,7 @@ const rows = computed(() => {
     >
       <span class="funnel__label">{{ row.label }}</span>
       <span class="funnel__track">
-        <span class="funnel__bar" :style="{ width: `${row.width}%` }" />
+        <span class="funnel__bar" :style="{ width: `${row.width}%`, background: row.color }" />
       </span>
       <span class="funnel__count">{{ row.count }}</span>
     </button>

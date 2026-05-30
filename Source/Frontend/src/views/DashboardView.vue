@@ -108,14 +108,14 @@ function openOrder(orderId: number): void {
         <Card>
           <template #title>Event-Kalender</template>
           <template #content>
-            <EventHeatmap :orders="activeOrders" :weeks="24" />
+            <EventHeatmap :orders="activeOrders" />
           </template>
         </Card>
 
         <Card>
           <template #title>Anstehende Events</template>
           <template #content>
-            <UpcomingEvents :orders="activeOrders" :limit="4" @select="openOrder" />
+            <UpcomingEvents :orders="activeOrders" :limit="6" @select="openOrder" />
           </template>
         </Card>
       </div>

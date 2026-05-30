@@ -8,13 +8,29 @@ const emit = defineEmits<{ select: [orderId: number] }>()
 
 const { formatDate } = useFormat()
 
-const upcoming = computed(() => {
-  const startOfToday = new Date()
-  startOfToday.setHours(0, 0, 0, 0)
-  return [...props.orders]
+interface UpcomingEntry extends OrderDto {
+  isOtherMonth: boolean
+}
+
+const upcoming = computed((): UpcomingEntry[] => {
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear  = now.getFullYear()
+  const startOfToday = new Date(currentYear, currentMonth, now.getDate())
+
+  const list = [...props.orders]
     .filter((o) => new Date(o.eventDate) >= startOfToday)
     .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
     .slice(0, props.limit ?? 6)
+
+  return list.map((o) => {
+    const d = new Date(o.eventDate)
+    return {
+      ...o,
+      // True when the event is NOT in the current calendar month/year.
+      isOtherMonth: d.getFullYear() !== currentYear || d.getMonth() !== currentMonth,
+    }
+  })
 })
 </script>
 
@@ -28,7 +44,10 @@ const upcoming = computed(() => {
       class="upcoming__row"
       @click="emit('select', event.id)"
     >
-      <span class="upcoming__date">{{ formatDate(event.eventDate) }}</span>
+      <span
+        class="upcoming__date"
+        :class="{ 'upcoming__date--other-month': event.isOtherMonth }"
+      >{{ formatDate(event.eventDate) }}</span>
       <span class="upcoming__info">
         <span class="upcoming__customer">{{ event.customerName }}</span>
         <span class="upcoming__meta">{{ event.guestCount }} Pers. · {{ event.location }}</span>
@@ -72,7 +91,12 @@ const upcoming = computed(() => {
   font-weight: 600;
   font-size: 0.875rem;
   white-space: nowrap;
-  color: var(--p-primary-color);
+  color: var(--cm-avocado);
+}
+
+/* Events outside the current month get the teal accent */
+.upcoming__date--other-month {
+  color: var(--cm-teal);
 }
 
 .upcoming__info {
