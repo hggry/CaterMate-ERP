@@ -59,16 +59,34 @@ const LABELS: Record<OrderStatus, string> = {
 
 export type TagSeverity = 'secondary' | 'info' | 'warn' | 'success' | 'danger'
 
+// PrimeVue severity kept as fallback (used by components that don't support custom style).
 const SEVERITIES: Record<OrderStatus, TagSeverity> = {
-  Neu: 'info',
-  Geprüft: 'secondary',
-  AngebotErstellt: 'warn',
-  Bestätigt: 'warn',
-  InBeschaffung: 'warn',
+  Neu:            'secondary',
+  Geprüft:        'secondary',
+  AngebotErstellt: 'info',
+  Bestätigt:      'info',
+  InBeschaffung:  'info',
   InVorbereitung: 'warn',
-  Durchgeführt: 'success',
-  Abgerechnet: 'success',
-  Storniert: 'danger',
+  Durchgeführt:   'success',
+  Abgerechnet:    'success',
+  Storniert:      'danger',
+}
+
+// Precise brand-colour styles for StatusTag (bg + text).
+// Palette: Sand #EAE0CC | Caramel #C2A87C | Teal #20A090 | Avocado #7AAA28
+//          Espresso #3E2818 | Rot-Orange #E84020
+export interface TagStyle { background: string; color: string; [key: string]: string }
+
+const TAG_STYLES: Record<OrderStatus, TagStyle> = {
+  Neu:             { background: '#EAE0CC', color: '#3E2818' },  // Sand / Espresso  — neutral, unbearbeitet
+  Geprüft:         { background: '#C2A87C', color: '#ffffff' },  // Caramel          — in Prüfung
+  AngebotErstellt: { background: '#5BC4B8', color: '#ffffff' },  // Light Teal       — Angebot draußen
+  Bestätigt:       { background: '#20A090', color: '#ffffff' },  // Deep Teal        — Kunde bestätigt ✓
+  InBeschaffung:   { background: '#5BC4B8', color: '#ffffff' },  // Light Teal       — operativ aktiv
+  InVorbereitung:  { background: '#7AAA28', color: '#ffffff' },  // Avocado          — nah am Ziel
+  Durchgeführt:    { background: '#5a7d1e', color: '#ffffff' },  // Avocado dunkel   — Event gelaufen
+  Abgerechnet:     { background: '#3E2818', color: '#ffffff' },  // Espresso         — vollständig abgeschlossen
+  Storniert:       { background: '#E84020', color: '#ffffff' },  // Rot-Orange       — abgesagt
 }
 
 export function useOrderStatus() {
@@ -88,6 +106,10 @@ export function useOrderStatus() {
     return SEVERITIES[status]
   }
 
+  function tagStyleFor(status: OrderStatus): TagStyle {
+    return TAG_STYLES[status]
+  }
+
   // Position in the linear pipeline; -1 for the off-pipeline cancelled state.
   function indexOf(status: OrderStatus): number {
     return (ORDER_STATUSES as readonly string[]).indexOf(status)
@@ -97,5 +119,5 @@ export function useOrderStatus() {
     return status === CANCELLED_STATUS
   }
 
-  return { primaryActionFor, tabForStatus, labelFor, severityFor, indexOf, isCancelled }
+  return { primaryActionFor, tabForStatus, labelFor, severityFor, tagStyleFor, indexOf, isCancelled }
 }

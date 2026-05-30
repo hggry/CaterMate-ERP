@@ -1,5 +1,26 @@
 # Code Guidelines
 
+## Farbpalette (Brand Guide)
+
+Die offiziellen CaterMate-Markenfarben. In der Frontend-App stehen sie als globale CSS-Custom-Properties (`App.vue`) zur Verfügung.
+
+| Token | Hex | Verwendung |
+|---|---|---|
+| `--cm-basis-hell` | `#FBF7F1` | App-Hintergrund |
+| `--cm-sand` | `#EAE0CC` | Surface, abwechselnde Tabellenzeilen |
+| `--cm-caramel` | `#C2A87C` | Warmer Mid-Tone-Akzent |
+| `--cm-espresso` | `#3E2818` | Primärer dunkler Text, Überschriften |
+| `--cm-avocado` | `#7AAA28` | **Primärfarbe** (= `--p-primary-color` via Theme) |
+| `--cm-teal` | `#20A090` | Sekundärer Akzent |
+| `--cm-orange` | `#E84020` | Destruktiv / Alarm / Storniert |
+
+**Regeln:**
+- Farbige UI-Elemente (Status-Tags, Budget-Differenz, Dashboard-Icons) nutzen ausschließlich diese Tokens, keine PrimeVue-internen `--p-red-*`/`--p-green-*`-Variablen.
+- Buttons bleiben einheitlich im PrimeVue-Theme (Avocado-Primary, ohne manuelles Überschreiben).
+- Die Paletten-Tokens sind in `src/App.vue` (`:root`) definiert und in `src/theme.ts` dokumentiert.
+
+---
+
 ## Sprachkonvention
 
 | Bereich | Sprache |

@@ -1,13 +1,14 @@
 import { definePreset } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
 
-// CaterMate brand palette (see Doc / brand guide):
-//   Avocado    #7AAA28  primary
-//   Deep Teal  #20A090  accent
-//   Rot-Orange #E84020  destructive
-//   Espresso   #3E2818  text
-//   Sand       #EAE0CC  surface
-//   Basis hell #FBF7F1  app background
+// CaterMate brand palette (see Doc / code-guidelines.md):
+//   Basis hell  #FBF7F1  app background
+//   Sand        #EAE0CC  surface / alternate row
+//   Caramel     #C2A87C  mid-tone warm accent
+//   Espresso    #3E2818  primary dark text / headings
+//   Avocado     #7AAA28  primary brand green (maps to --p-primary-color)
+//   Deep Teal   #20A090  secondary accent
+//   Rot-Orange  #E84020  destructive / alert
 export const CaterMatePreset = definePreset(Aura, {
   semantic: {
     primary: {

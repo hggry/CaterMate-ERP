@@ -648,8 +648,8 @@ watch(categoryOptions, () => {
 }
 
 .menu-view__badge--unsuitable {
-  color: var(--p-red-500, #ef4444);
-  background: color-mix(in srgb, var(--p-red-500, #ef4444) 14%, transparent);
+  color: var(--cm-orange);
+  background: color-mix(in srgb, var(--cm-orange) 14%, transparent);
 }
 
 .menu-view__item-price {
@@ -758,11 +758,11 @@ watch(categoryOptions, () => {
 }
 
 .menu-view__calc-row--ok {
-  color: var(--p-green-600, #16a34a);
+  color: var(--cm-avocado);
 }
 
 .menu-view__calc-row--over {
-  color: var(--p-red-500, #ef4444);
+  color: var(--cm-orange);
 }
 
 .menu-view__hint {

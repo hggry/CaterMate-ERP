@@ -186,7 +186,7 @@ const saveLabel = computed(() => {
 }
 
 .order-overview__save-state--error {
-  color: var(--p-red-500, #ef4444);
+  color: var(--cm-orange);
 }
 
 .order-overview__received {

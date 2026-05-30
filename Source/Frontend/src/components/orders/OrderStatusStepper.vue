@@ -46,8 +46,8 @@ function stateOf(index: number): 'done' | 'active' | 'upcoming' {
   gap: 0.5rem;
   padding: 0.5rem 0.875rem;
   border-radius: var(--p-border-radius, 6px);
-  background: color-mix(in srgb, var(--p-red-500, #ef4444) 12%, transparent);
-  color: var(--p-red-500, #ef4444);
+  background: color-mix(in srgb, var(--cm-orange) 12%, transparent);
+  color: var(--cm-orange);
   font-weight: 600;
   font-size: 0.875rem;
 }

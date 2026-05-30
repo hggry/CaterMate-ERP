@@ -128,10 +128,13 @@ function logout(): void {
   align-items: center;
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
+  /* Reserve border space so hover doesn't cause layout shift */
+  border: 1px solid transparent;
   border-radius: var(--p-border-radius, 6px);
   color: var(--p-text-color);
   text-decoration: none;
   font-size: 0.9rem;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .app-sidebar__link i {
@@ -150,12 +153,14 @@ function logout(): void {
   flex-shrink: 0;
 }
 
-.app-sidebar__link:hover {
-  background: var(--p-content-hover-background);
+.app-sidebar__link:hover:not(.app-sidebar__link--active) {
+  border-color: var(--p-primary-color);
+  color: var(--p-primary-color);
 }
 
 .app-sidebar__link--active {
   background: var(--p-primary-color);
+  border-color: var(--p-primary-color);
   color: var(--p-primary-contrast-color);
 }
 
