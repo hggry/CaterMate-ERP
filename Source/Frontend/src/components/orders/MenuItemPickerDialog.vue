@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
+import DishSuggestionList from './DishSuggestionList.vue'
 import { ordersApi } from '@/services/ordersApi'
 import { menuItemsApi } from '@/services/menuItemsApi'
 import { useApi } from '@/composables/useApi'
@@ -23,14 +23,12 @@ const localIds = ref<number[]>([])
 const toggling = ref(false)
 const filterText = ref('')
 
-const suggestions = useApi(ordersApi.getSuggestions)
 const catalog = useApi(menuItemsApi.list)
 
 watch(visible, (open) => {
   if (open) {
     localIds.value = [...props.assignedIds]
     filterText.value = ''
-    suggestions.execute(props.orderId)
     catalog.execute()
   }
 })
@@ -69,41 +67,12 @@ async function toggleItem(id: number, add: boolean): Promise<void> {
     :style="{ width: '48rem' }"
   >
     <div class="picker-dialog">
-      <section class="picker-dialog__section">
-        <div class="picker-dialog__section-title">Gerichtsvorschläge</div>
-
-        <div v-if="suggestions.loading.value" class="picker-dialog__center">
-          <ProgressSpinner style="width: 2rem; height: 2rem" />
-        </div>
-        <Message v-else-if="suggestions.error.value" severity="warn" :closable="false">
-          Vorschläge konnten nicht geladen werden.
-        </Message>
-        <p
-          v-else-if="!suggestions.data.value || suggestions.data.value.suggestions.length === 0"
-          class="picker-dialog__empty"
-        >
-          Keine Vorschläge vorhanden.
-        </p>
-        <ul v-else class="picker-dialog__suggestion-list">
-          <li
-            v-for="s in suggestions.data.value.suggestions"
-            :key="s.menuItemId"
-            class="picker-dialog__suggestion-item"
-          >
-            <div class="picker-dialog__suggestion-info">
-              <span class="picker-dialog__name">{{ s.menuItemName }}</span>
-              <span class="picker-dialog__meta">{{ s.reason }}</span>
-            </div>
-            <Button
-              :icon="localIds.includes(s.menuItemId) ? 'pi pi-check' : 'pi pi-plus'"
-              :severity="localIds.includes(s.menuItemId) ? 'success' : 'secondary'"
-              :disabled="localIds.includes(s.menuItemId) || toggling"
-              size="small"
-              @click="toggleItem(s.menuItemId, true)"
-            />
-          </li>
-        </ul>
-      </section>
+      <DishSuggestionList
+        :order-id="orderId"
+        :assigned-ids="localIds"
+        :disabled="toggling"
+        @add="toggleItem($event, true)"
+      />
 
       <section class="picker-dialog__section">
         <div class="picker-dialog__section-title">Alle Menüartikel</div>
@@ -179,30 +148,6 @@ async function toggleItem(id: number, add: boolean): Promise<void> {
 .picker-dialog__empty {
   color: var(--p-text-muted-color);
   margin: 0;
-}
-
-.picker-dialog__suggestion-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-height: 10rem;
-  overflow-y: auto;
-}
-
-.picker-dialog__suggestion-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.picker-dialog__suggestion-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
 }
 
 .picker-dialog__search {

@@ -1,241 +1,202 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Panel from 'primevue/panel'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import DatePicker from 'primevue/datepicker'
-import Textarea from 'primevue/textarea'
+import Message from 'primevue/message'
+import OrderForm from '@/components/orders/OrderForm.vue'
+import DishSuggestionList from '@/components/orders/DishSuggestionList.vue'
 import MenuItemPickerDialog from '@/components/orders/MenuItemPickerDialog.vue'
 import { ordersApi } from '@/services/ordersApi'
 import { useToast } from '@/composables/useToast'
 import { useOrderContext } from '@/composables/useOrderContext'
+import { useOrderStatus } from '@/composables/useOrderStatus'
 import { useFormat } from '@/composables/useFormat'
 import { apiErrorMessage } from '@/types/api'
-import type { OrderDto, OrderStatus, UpdateOrderRequest } from '@/types/order'
+import type { OrderDto } from '@/types/order'
+import {
+  emptyOrderForm,
+  orderToForm,
+  validateOrderForm,
+  type OrderFormErrors,
+} from '@/components/orders/orderFormSchema'
 
 const { order, orderId, reload } = useOrderContext()
 const toast = useToast()
 const { formatCurrency, formatDateTime } = useFormat()
+const { indexOf } = useOrderStatus()
 
-const form = ref<{
-  customerName: string
-  customerPhone: string
-  eventDate: Date | null
-  guestCount: number
-  eventType: string
-  location: string
-  budget: number | null
-  specialWishes: string
-  allergies: string
-  dishWishes: string
-}>({
-  customerName: '',
-  customerPhone: '',
-  eventDate: null,
-  guestCount: 1,
-  eventType: '',
-  location: '',
-  budget: null,
-  specialWishes: '',
-  allergies: '',
-  dishWishes: '',
-})
-
-const assignedIds = ref<number[]>([])
-const saving = ref(false)
+const form = reactive(emptyOrderForm())
+const errors = ref<OrderFormErrors>({})
 const pickerVisible = ref(false)
+const menuBusy = ref(false)
 
-function syncForm(o: OrderDto): void {
-  form.value = {
-    customerName: o.customerName,
-    customerPhone: o.customerPhone ?? '',
-    eventDate: new Date(o.eventDate),
-    guestCount: o.guestCount,
-    eventType: o.eventType ?? '',
-    location: o.location,
-    budget: o.budget,
-    specialWishes: o.specialWishes ?? '',
-    allergies: o.allergies ?? '',
-    dishWishes: o.dishWishes ?? '',
-  }
-  assignedIds.value = o.assignedMenuItems.map((m) => m.id)
+type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
+const saveState = ref<SaveState>('idle')
+
+// Editing is locked once the offer is released — changing core data afterwards
+// would desync the released quote / invoice.
+const locked = computed(() =>
+  order.value ? indexOf(order.value.status) >= indexOf('AngebotErstellt') : false,
+)
+
+const assignedIds = computed(() => order.value?.assignedMenuItems.map((m) => m.id) ?? [])
+const showSuggestions = computed(() => order.value?.status === 'Neu')
+
+const syncedOrderId = ref<number | null>(null)
+let savedRequestJson = ''
+
+function snapshotSaved(): void {
+  const result = validateOrderForm(form)
+  savedRequestJson = result.valid && result.request ? JSON.stringify(result.request) : ''
 }
 
-watch(order, (o) => o && syncForm(o), { immediate: true })
+// Sync the form once per loaded order. Later reloads of the same order (after a
+// save or a menu change) must not clobber what the user is editing.
+watch(
+  order,
+  (o: OrderDto | null) => {
+    if (o && o.id !== syncedOrderId.value) {
+      Object.assign(form, orderToForm(o))
+      syncedOrderId.value = o.id
+      snapshotSaved()
+      saveState.value = 'idle'
+    }
+  },
+  { immediate: true },
+)
 
-function buildPayload(extra: Partial<UpdateOrderRequest> = {}): UpdateOrderRequest {
-  return {
-    customerName: form.value.customerName || undefined,
-    customerPhone: form.value.customerPhone || undefined,
-    eventDate: form.value.eventDate?.toISOString(),
-    guestCount: form.value.guestCount,
-    eventType: form.value.eventType || undefined,
-    location: form.value.location,
-    budget: form.value.budget ?? undefined,
-    specialWishes: form.value.specialWishes || undefined,
-    allergies: form.value.allergies || undefined,
-    dishWishes: form.value.dishWishes || undefined,
-    ...extra,
-  }
-}
+const DEBOUNCE_MS = 700
+let timer: ReturnType<typeof setTimeout> | null = null
 
-async function patch(payload: UpdateOrderRequest, successText: string): Promise<void> {
-  if (form.value.guestCount < 1) {
-    toast.error('Personenanzahl muss größer als 0 sein.')
+watch(form, () => {
+  if (locked.value) return
+  saveState.value = 'dirty'
+  if (timer) clearTimeout(timer)
+  timer = setTimeout(() => {
+    timer = null
+    void doSave()
+  }, DEBOUNCE_MS)
+}, { deep: true })
+
+async function doSave(): Promise<void> {
+  if (locked.value) return
+  const result = validateOrderForm(form)
+  errors.value = result.errors
+  if (!result.valid || !result.request) {
+    saveState.value = 'error'
     return
   }
-  saving.value = true
+  const json = JSON.stringify(result.request)
+  if (json === savedRequestJson) {
+    saveState.value = 'saved'
+    return
+  }
+  saveState.value = 'saving'
   try {
-    await ordersApi.update(orderId, payload)
-    await reload()
-    toast.success(successText)
+    const updated = await ordersApi.update(orderId, result.request)
+    savedRequestJson = json
+    order.value = updated
+    saveState.value = 'saved'
   } catch (e) {
+    saveState.value = 'error'
     toast.error(apiErrorMessage(e))
-  } finally {
-    saving.value = false
   }
 }
 
-function saveDetails(): Promise<void> {
-  return patch(buildPayload(), 'Auftragsdaten gespeichert.')
+// Persist any pending debounced edit before leaving the view.
+function flush(): void {
+  if (timer) {
+    clearTimeout(timer)
+    timer = null
+    void doSave()
+  }
 }
 
-function markAsChecked(): Promise<void> {
-  return patch(buildPayload({ status: 'Geprüft' }), 'Auftrag wurde als geprüft markiert.')
-}
+onBeforeUnmount(flush)
 
-function advanceStatus(status: OrderStatus, successText: string): Promise<void> {
-  return patch({ status }, successText)
-}
-
-async function removeMenuItem(id: number): Promise<void> {
-  const newIds = assignedIds.value.filter((x) => x !== id)
-  saving.value = true
+async function setMenuItems(ids: number[]): Promise<void> {
+  menuBusy.value = true
   try {
-    await ordersApi.update(orderId, { assignedMenuItemIds: newIds })
+    await ordersApi.update(orderId, { assignedMenuItemIds: ids })
     await reload()
   } catch (e) {
     toast.error(apiErrorMessage(e))
   } finally {
-    saving.value = false
+    menuBusy.value = false
   }
 }
+
+function addMenuItem(id: number): void {
+  if (assignedIds.value.includes(id)) return
+  void setMenuItems([...assignedIds.value, id])
+}
+
+function removeMenuItem(id: number): void {
+  void setMenuItems(assignedIds.value.filter((x) => x !== id))
+}
+
+const saveLabel = computed(() => {
+  switch (saveState.value) {
+    case 'saving':
+      return 'Speichert…'
+    case 'saved':
+      return 'Alle Änderungen gespeichert'
+    case 'dirty':
+      return 'Ungespeicherte Änderungen…'
+    case 'error':
+      return 'Speichern fehlgeschlagen'
+    default:
+      return ''
+  }
+})
 </script>
 
 <template>
   <div v-if="order" class="order-overview">
     <div class="order-overview__header">
       <h2>Auftragsübersicht</h2>
-      <div class="order-overview__header-actions">
-        <Button
-          v-if="order.status === 'Neu'"
-          label="Als geprüft markieren"
-          icon="pi pi-check"
-          :loading="saving"
-          @click="markAsChecked"
+      <span
+        v-if="!locked && saveLabel"
+        class="order-overview__save-state"
+        :class="{ 'order-overview__save-state--error': saveState === 'error' }"
+      >
+        <i
+          :class="
+            saveState === 'saving'
+              ? 'pi pi-spin pi-spinner'
+              : saveState === 'saved'
+                ? 'pi pi-check'
+                : saveState === 'error'
+                  ? 'pi pi-exclamation-circle'
+                  : 'pi pi-pencil'
+          "
         />
-        <Button
-          v-if="order.status === 'InBeschaffung'"
-          label="In Vorbereitung"
-          icon="pi pi-arrow-right"
-          :loading="saving"
-          @click="advanceStatus('InVorbereitung', 'Auftrag ist in Vorbereitung.')"
-        />
-        <Button
-          v-if="order.status === 'InVorbereitung'"
-          label="Als durchgeführt markieren"
-          icon="pi pi-check"
-          :loading="saving"
-          @click="advanceStatus('Durchgeführt', 'Auftrag wurde als durchgeführt markiert.')"
-        />
-        <Button
-          label="Änderungen speichern"
-          icon="pi pi-save"
-          severity="secondary"
-          :loading="saving"
-          @click="saveDetails"
-        />
-      </div>
+        {{ saveLabel }}
+      </span>
     </div>
 
-    <div class="order-overview__main">
-      <div class="order-overview__left">
-        <Panel header="Kundendaten">
-          <div class="order-overview__form">
-            <div class="order-overview__field">
-              <label for="customerName">Kunde</label>
-              <InputText id="customerName" v-model="form.customerName" />
-            </div>
-            <div class="order-overview__field">
-              <label for="customerPhone">Telefon</label>
-              <InputText id="customerPhone" v-model="form.customerPhone" />
-            </div>
-            <div class="order-overview__field">
-              <label for="eventDate">Eventdatum</label>
-              <DatePicker
-                id="eventDate"
-                v-model="form.eventDate"
-                date-format="dd.mm.yy"
-                show-icon
-                fluid
-              />
-            </div>
-            <div class="order-overview__field">
-              <span class="order-overview__field-label">Eingegangen am</span>
-              <span class="order-overview__field-value">{{ formatDateTime(order.createdAt) }}</span>
-            </div>
-          </div>
-        </Panel>
+    <Message v-if="locked" severity="info" :closable="false">
+      Auftrag ist freigegeben — Stammdaten sind gesperrt.
+    </Message>
 
-        <Panel header="Auftragsdaten">
-          <div class="order-overview__form">
-            <div class="order-overview__field">
-              <label for="guestCount">Personenanzahl</label>
-              <InputNumber
-                v-model="form.guestCount"
-                input-id="guestCount"
-                :min="1"
-                :max="5000"
-                show-buttons
-              />
-            </div>
-            <div class="order-overview__field">
-              <label for="eventType">Eventtyp</label>
-              <InputText id="eventType" v-model="form.eventType" />
-            </div>
-            <div class="order-overview__field">
-              <label for="location">Ort</label>
-              <InputText id="location" v-model="form.location" />
-            </div>
-            <div class="order-overview__field">
-              <label for="budget">Budget</label>
-              <InputNumber
-                v-model="form.budget"
-                input-id="budget"
-                suffix=" €"
-                :min="0"
-                :max-fraction-digits="2"
-                :use-grouping="false"
-              />
-            </div>
-            <div class="order-overview__field">
-              <label for="specialWishes">Sonderwünsche</label>
-              <Textarea id="specialWishes" v-model="form.specialWishes" rows="2" auto-resize />
-            </div>
-            <div class="order-overview__field">
-              <label for="allergies">Allergien</label>
-              <InputText id="allergies" v-model="form.allergies" />
-            </div>
-            <div class="order-overview__field">
-              <label for="dishWishes">Gerichtswünsche</label>
-              <Textarea id="dishWishes" v-model="form.dishWishes" rows="2" auto-resize />
-            </div>
-          </div>
-        </Panel>
-      </div>
+    <div class="order-overview__main">
+      <Panel header="Auftragsdaten" class="order-overview__left">
+        <OrderForm :form="form" :errors="errors" :readonly="locked" />
+        <p class="order-overview__received">
+          Eingegangen am {{ formatDateTime(order.createdAt) }}
+        </p>
+      </Panel>
 
       <Panel header="Menüartikel" class="order-overview__right">
+        <DishSuggestionList
+          v-if="showSuggestions"
+          :order-id="orderId"
+          :assigned-ids="assignedIds"
+          :disabled="menuBusy"
+          class="order-overview__suggestions"
+          @add="addMenuItem"
+        />
+
         <div class="order-overview__menu-list">
           <p v-if="!order.assignedMenuItems.length" class="order-overview__empty">
             Keine Menüartikel zugeordnet.
@@ -257,7 +218,8 @@ async function removeMenuItem(id: number): Promise<void> {
               text
               rounded
               size="small"
-              :loading="saving"
+              :disabled="locked"
+              :loading="menuBusy"
               @click="removeMenuItem(item.id)"
             />
           </div>
@@ -267,6 +229,7 @@ async function removeMenuItem(id: number): Promise<void> {
           icon="pi pi-plus"
           severity="secondary"
           class="order-overview__add-btn"
+          :disabled="locked"
           @click="pickerVisible = true"
         />
       </Panel>
@@ -278,7 +241,6 @@ async function removeMenuItem(id: number): Promise<void> {
       :assigned-ids="assignedIds"
       @changed="reload"
     />
-
   </div>
 </template>
 
@@ -293,16 +255,23 @@ async function removeMenuItem(id: number): Promise<void> {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
 }
 
 .order-overview__header h2 {
   margin: 0;
 }
 
-.order-overview__header-actions {
-  display: flex;
+.order-overview__save-state {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.order-overview__save-state--error {
+  color: var(--p-red-500, #ef4444);
 }
 
 .order-overview__main {
@@ -312,36 +281,21 @@ async function removeMenuItem(id: number): Promise<void> {
   align-items: start;
 }
 
-.order-overview__left {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
 .order-overview__right {
   position: sticky;
   top: 0;
 }
 
-.order-overview__form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.order-overview__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.order-overview__field-label {
-  font-size: 0.875rem;
+.order-overview__received {
+  margin: 1rem 0 0;
+  font-size: 0.8125rem;
   color: var(--p-text-muted-color);
 }
 
-.order-overview__field-value {
-  font-size: 0.9375rem;
+.order-overview__suggestions {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--p-content-border-color);
 }
 
 .order-overview__menu-list {

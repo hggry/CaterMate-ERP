@@ -24,6 +24,11 @@ const busy = ref(false)
 
 const canCreate = computed(() => order.value?.status === 'Geprüft' && !quote.value)
 const canRelease = computed(() => order.value?.status === 'Geprüft' && !!quote.value)
+const overBudget = computed(() =>
+  quote.value !== null &&
+  order.value?.budget != null &&
+  quote.value!.totalGross > order.value.budget,
+)
 
 async function loadQuote(): Promise<void> {
   loading.value = true
@@ -114,6 +119,11 @@ async function downloadPdf(): Promise<void> {
     </template>
 
     <template v-else>
+      <Message v-if="overBudget" severity="error" :closable="false">
+        Die Angebotssumme ({{ formatCurrency(quote.totalGross) }}) übersteigt das Budget des Kunden
+        von {{ formatCurrency(order!.budget!) }}.
+      </Message>
+
       <PositionsTable :positions="quote.positions" editable />
 
       <Card class="quote-view__summary">

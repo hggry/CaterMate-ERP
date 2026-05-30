@@ -1,25 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import PurchaseGroup from '@/components/purchase/PurchaseGroup.vue'
 import { purchaseListApi } from '@/services/purchaseListApi'
-import { ordersApi } from '@/services/ordersApi'
 import { useToast } from '@/composables/useToast'
 import { useOrderContext } from '@/composables/useOrderContext'
 import { ApiError, apiErrorMessage } from '@/types/api'
 import type { PurchaseListDto } from '@/types/purchaseList'
 
-const { order, orderId, reload } = useOrderContext()
+const { orderId } = useOrderContext()
 const toast = useToast()
 
 const list = ref<PurchaseListDto | null>(null)
 const loading = ref(false)
 const loadError = ref(false)
-const busy = ref(false)
-
-const canConfirm = computed(() => order.value?.status === 'AngebotErstellt')
 
 async function loadList(): Promise<void> {
   loading.value = true
@@ -38,20 +34,6 @@ async function loadList(): Promise<void> {
 }
 
 onMounted(loadList)
-
-async function confirmOrder(): Promise<void> {
-  busy.value = true
-  try {
-    await ordersApi.update(orderId, { status: 'Bestätigt' })
-    await reload()
-    await loadList()
-    toast.success('Auftrag bestätigt — Einkaufsliste wurde erstellt.')
-  } catch (e) {
-    toast.error(apiErrorMessage(e))
-  } finally {
-    busy.value = false
-  }
-}
 
 async function onToggle(itemId: number, isDone: boolean): Promise<void> {
   try {
@@ -84,18 +66,9 @@ async function downloadPdf(): Promise<void> {
       Einkaufsliste konnte nicht geladen werden.
     </Message>
 
-    <template v-else-if="!list">
-      <Message severity="info" :closable="false">
-        Die Einkaufsliste wird erstellt, sobald der Auftrag bestätigt ist.
-      </Message>
-      <Button
-        v-if="canConfirm"
-        label="Auftrag bestätigen"
-        icon="pi pi-check"
-        :loading="busy"
-        @click="confirmOrder"
-      />
-    </template>
+    <Message v-else-if="!list" severity="info" :closable="false">
+      Die Einkaufsliste wird erstellt, sobald der Auftrag bestätigt ist.
+    </Message>
 
     <template v-else>
       <div class="purchase-view__groups">

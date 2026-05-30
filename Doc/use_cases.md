@@ -92,10 +92,11 @@
 - **Hauptablauf:**
     1. Nach Event setzt User Status auf `Durchgeführt`
     2. Klickt auf `Rechnung erstellen`
-    3. System übernimmt alle Positionen aus Angebot, vergibt fortlaufende Rechnungsnummer, Datum, Zahlungsziel
-    4. Druckansicht der Rechnung wird erzeugt
-    5. Status springt auf `Abgerechnet`
-- **Nachbedingung:** Formal korrekte Rechnung verfügbar, Auftrag abgeschlossen
+    3. System übernimmt alle Positionen aus dem freigegebenen Angebot, vergibt fortlaufende Rechnungsnummer, setzt Rechnungsdatum und Zahlungsziel (14 Tage)
+    4. Druckansicht der Rechnung wird erzeugt; Auftragsstatus verbleibt auf `Durchgeführt`
+    5. User versendet Rechnung an Kunden und wartet auf Zahlungseingang
+    6. User bestätigt Zahlungseingang über `Zahlungseingang bestätigen` → Status wechselt auf `Abgerechnet`
+- **Nachbedingung:** Formal korrekte Rechnung verfügbar, Zahlungseingang im System hinterlegt, Auftrag vollständig abgeschlossen
 
 ---
 
