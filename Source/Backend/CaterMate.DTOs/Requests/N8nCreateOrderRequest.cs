@@ -9,6 +9,7 @@ public class N8nCreateOrderRequest
     [Required, Range(1, 5000)] public int GuestCount { get; set; }
     public decimal? Budget { get; set; }
     public string? DishWishes { get; set; }
+    public string? SpecialWishes { get; set; }
     public string? Allergies { get; set; }
     [Required] public DateTime Date { get; set; }
     public TimeSpan? Time { get; set; }
@@ -20,6 +21,7 @@ public class N8nCustomerDto
 {
     [Required] public string Name { get; set; } = string.Empty;
     public string? Tel { get; set; }
+    public long? TelegramChatId { get; set; }
 }
 
 public class N8nOrderMenuItemDto

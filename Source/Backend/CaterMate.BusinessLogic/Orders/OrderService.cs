@@ -89,7 +89,8 @@ public class OrderService : IOrderService
                 throw new KeyNotFoundException($"MenuItem {item.MenuItemId} not found");
         }
 
-        var customerId = await _customerRepo.UpsertByPhoneAsync(request.Customer.Name, request.Customer.Tel);
+        var contact = request.Customer.TelegramChatId?.ToString() ?? request.Customer.Tel;
+        var customerId = await _customerRepo.UpsertByPhoneAsync(request.Customer.Name, contact);
 
         var eventDate = request.Time.HasValue
             ? request.Date.Add(request.Time.Value)
@@ -104,6 +105,7 @@ public class OrderService : IOrderService
             GuestCount = request.GuestCount,
             Budget = request.Budget,
             DishWishes = request.DishWishes,
+            SpecialWishes = request.SpecialWishes,
             Allergies = request.Allergies,
             Status = "Neu"
         };
