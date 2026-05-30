@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using CaterMate.Db.Entities;
 using CaterMate.Db.Repositories;
 using CaterMate.DTOs.Requests;
@@ -101,8 +101,15 @@ public class IncomingInvoiceService : IIncomingInvoiceService
         try
         {
             var client = _httpClientFactory.CreateClient();
-            var payload = new { invoiceId, filePath };
-            await client.PostAsJsonAsync(webhookUrl, payload);
+
+            using var form = new MultipartFormDataContent();
+            var fileBytes = await File.ReadAllBytesAsync(filePath);
+            var fileContent = new ByteArrayContent(fileBytes);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+            form.Add(fileContent, "file", Path.GetFileName(filePath));
+            form.Add(new StringContent(invoiceId.ToString()), "incomingInvoiceId");
+
+            await client.PostAsync(webhookUrl, form);
         }
         catch (Exception ex)
         {
