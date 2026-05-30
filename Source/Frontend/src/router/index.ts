@@ -16,6 +16,7 @@ import MenuItemsView from '@/views/MenuItemsView.vue'
 import IngredientsView from '@/views/IngredientsView.vue'
 import IncomingInvoiceView from '@/views/IncomingInvoiceView.vue'
 import PriceSuggestionsView from '@/views/PriceSuggestionsView.vue'
+import CompanySettingsView from '@/views/CompanySettingsView.vue'
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
@@ -47,6 +48,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'ingredients', name: 'ingredients', component: IngredientsView },
       { path: 'incoming-invoices', name: 'incoming-invoices', component: IncomingInvoiceView },
       { path: 'price-suggestions', name: 'price-suggestions', component: PriceSuggestionsView },
+      { path: 'company-settings', name: 'company-settings', component: CompanySettingsView },
       { path: ':pathMatch(.*)*', name: 'not-found', component: NotFoundView },
     ],
   },

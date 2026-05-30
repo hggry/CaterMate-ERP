@@ -1,4 +1,5 @@
 using CaterMate.BusinessLogic.Pdf;
+using CaterMate.BusinessLogic.Settings;
 using CaterMate.Db.Entities;
 using CaterMate.Db.Repositories;
 using CaterMate.DTOs.Responses;
@@ -12,6 +13,7 @@ public class PurchaseListService : IPurchaseListService
     private readonly IMenuItemRepository _menuItemRepo;
     private readonly IIngredientRepository _ingredientRepo;
     private readonly IPdfService _pdfService;
+    private readonly ICompanySettingsService _companySettings;
 
     private const decimal SafetyMargin = 0.10m;
 
@@ -20,13 +22,15 @@ public class PurchaseListService : IPurchaseListService
         IOrderRepository orderRepo,
         IMenuItemRepository menuItemRepo,
         IIngredientRepository ingredientRepo,
-        IPdfService pdfService)
+        IPdfService pdfService,
+        ICompanySettingsService companySettings)
     {
         _repo = repo;
         _orderRepo = orderRepo;
         _menuItemRepo = menuItemRepo;
         _ingredientRepo = ingredientRepo;
         _pdfService = pdfService;
+        _companySettings = companySettings;
     }
 
     public async Task CreateForOrderAsync(int orderId)
@@ -122,6 +126,7 @@ public class PurchaseListService : IPurchaseListService
         var dto = await GetByOrderIdAsync(orderId);
         var order = await _orderRepo.GetByIdAsync(orderId)
             ?? throw new KeyNotFoundException($"Order {orderId} not found");
-        return _pdfService.GeneratePurchaseListPdf(dto, order.GuestCount);
+        var company = await _companySettings.GetAsync();
+        return _pdfService.GeneratePurchaseListPdf(dto, order.GuestCount, company);
     }
 }

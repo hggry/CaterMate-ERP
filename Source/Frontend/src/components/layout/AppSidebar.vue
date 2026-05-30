@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { label: 'Preisänderungsvorschläge', icon: 'pi pi-tags', to: { name: 'price-suggestions' }, badge: true },
   { label: 'Menüartikel', icon: 'pi pi-book', to: { name: 'menu-items' } },
   { label: 'Zutaten', icon: 'pi pi-shopping-cart', to: { name: 'ingredients' } },
+  { label: 'Einstellungen', icon: 'pi pi-cog', to: { name: 'company-settings' } },
 ]
 
 onMounted(() => suggestions.refresh())

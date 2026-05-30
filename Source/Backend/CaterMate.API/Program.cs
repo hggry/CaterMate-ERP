@@ -11,6 +11,7 @@ using CaterMate.BusinessLogic.Orders;
 using CaterMate.BusinessLogic.Pdf;
 using CaterMate.BusinessLogic.Procurement;
 using CaterMate.BusinessLogic.Quotes;
+using CaterMate.BusinessLogic.Settings;
 using CaterMate.BusinessLogic.Stock;
 using CaterMate.BusinessLogic.Suggestions;
 using CaterMate.Db;
@@ -63,6 +64,8 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IIncomingInvoiceService, IncomingInvoiceService>();
 builder.Services.AddScoped<ISuggestionService, SuggestionService>();
+builder.Services.AddScoped<ICompanySettingsRepository, CompanySettingsRepository>();
+builder.Services.AddScoped<ICompanySettingsService, CompanySettingsService>();
 builder.Services.AddHttpClient();
 
 // Filters

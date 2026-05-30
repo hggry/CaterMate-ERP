@@ -1,4 +1,5 @@
 using CaterMate.BusinessLogic.Pdf;
+using CaterMate.BusinessLogic.Settings;
 using CaterMate.Db.Entities;
 using CaterMate.Db.Repositories;
 using CaterMate.DTOs.Responses;
@@ -12,19 +13,22 @@ public class InvoiceService : IInvoiceService
     private readonly IQuoteRepository _quoteRepo;
     private readonly ICustomerRepository _customerRepo;
     private readonly IPdfService _pdfService;
+    private readonly ICompanySettingsService _companySettings;
 
     public InvoiceService(
         IInvoiceRepository invoiceRepo,
         IOrderRepository orderRepo,
         IQuoteRepository quoteRepo,
         ICustomerRepository customerRepo,
-        IPdfService pdfService)
+        IPdfService pdfService,
+        ICompanySettingsService companySettings)
     {
         _invoiceRepo = invoiceRepo;
         _orderRepo = orderRepo;
         _quoteRepo = quoteRepo;
         _customerRepo = customerRepo;
         _pdfService = pdfService;
+        _companySettings = companySettings;
     }
 
     public async Task<InvoiceDto> CreateAsync(int orderId)
@@ -82,7 +86,8 @@ public class InvoiceService : IInvoiceService
     public async Task<byte[]> GetPdfBytesAsync(int orderId)
     {
         var dto = await GetByOrderIdAsync(orderId);
-        return _pdfService.GenerateInvoicePdf(dto);
+        var company = await _companySettings.GetAsync();
+        return _pdfService.GenerateInvoicePdf(dto, company);
     }
 
     private static InvoiceDto MapToDto(InvoiceEntity invoice, IEnumerable<InvoicePositionEntity> positions) =>

@@ -5,28 +5,238 @@ using QuestPDF.Infrastructure;
 
 namespace CaterMate.BusinessLogic.Pdf;
 
+/// <summary>
+/// Generates all customer-facing and internal PDFs.
+/// Brand colours: Avocado #7AAA28 (primary), Espresso #3E2818 (text),
+/// Sand #F5F5F5 (alternate row), White #FFFFFF.
+/// </summary>
 public class PdfService : IPdfService
 {
-    public byte[] GenerateQuotePdf(QuoteDto quote, string customerName, DateTime eventDate)
+    // ── Brand colours ────────────────────────────────────────────────────────
+    private static readonly Color Primary  = Color.FromHex("#7AAA28");
+    private static readonly Color DarkText = Color.FromHex("#3E2818");
+    private static readonly Color AltRow   = Color.FromHex("#F5F5F5");
+    private static readonly Color White    = Colors.White;
+    private static readonly Color LightGray = Color.FromHex("#E8E8E8");
+
+    // ── Shared helpers ───────────────────────────────────────────────────────
+
+    /// Renders the company header block (logo + name + address + contact).
+    private static void AddCompanyHeader(ColumnDescriptor col, CompanySettingsDto c, byte[]? logo)
     {
+        col.Item().Row(row =>
+        {
+            // Logo cell
+            if (logo != null)
+            {
+                row.ConstantItem(60).Height(60).Image(logo).FitArea();
+                row.ConstantItem(12); // spacing
+            }
+
+            // Company info
+            row.RelativeItem().Column(info =>
+            {
+                info.Item().Text(c.CompanyName).Bold().FontSize(14).FontColor(DarkText);
+
+                var addressParts = new[]
+                {
+                    c.Street,
+                    string.IsNullOrWhiteSpace(c.PostalCode) && string.IsNullOrWhiteSpace(c.City)
+                        ? null
+                        : $"{c.PostalCode} {c.City}".Trim(),
+                    c.Country,
+                }.Where(x => !string.IsNullOrWhiteSpace(x));
+                foreach (var part in addressParts)
+                    info.Item().Text(part).FontSize(9).FontColor(DarkText);
+            });
+
+            // Contact + tax info (right-aligned)
+            row.RelativeItem().AlignRight().Column(contact =>
+            {
+                void Line(string? value, string label)
+                {
+                    if (!string.IsNullOrWhiteSpace(value))
+                        contact.Item().Text($"{label}: {value}").FontSize(9).FontColor(DarkText);
+                }
+                Line(c.Phone, "Tel.");
+                Line(c.Email, "E-Mail");
+                Line(c.Website, "Web");
+                Line(c.VatId, "UID");
+                Line(c.TaxNumber, "St.-Nr.");
+            });
+        });
+
+        // Accent line under header
+        col.Item().PaddingTop(6).PaddingBottom(8)
+            .LineHorizontal(1.5f).LineColor(Primary);
+    }
+
+    /// Renders a styled document title row with number/date info on the right.
+    private static void AddDocumentTitleBar(ColumnDescriptor col, string title, string infoLeft, string infoRight)
+    {
+        col.Item().PaddingBottom(12).Row(row =>
+        {
+            row.RelativeItem().Text(title).Bold().FontSize(20).FontColor(Primary);
+            row.RelativeItem().AlignRight().Column(c =>
+            {
+                c.Item().Text(infoLeft).FontSize(9).FontColor(DarkText);
+                c.Item().Text(infoRight).FontSize(9).FontColor(DarkText);
+            });
+        });
+    }
+
+    /// Renders a standard positions table header.
+    private static void AddTableHeader(TableDescriptor table)
+    {
+        table.Header(h =>
+        {
+            void HeaderCell(string text, bool alignRight = false)
+            {
+                var cell = h.Cell().Background(Primary).Padding(5);
+                var txt = cell.Text(text).Bold().FontColor(White).FontSize(9);
+                if (alignRight) txt.AlignRight();
+            }
+            HeaderCell("Bezeichnung");
+            HeaderCell("Menge", true);
+            HeaderCell("EP (€)", true);
+            HeaderCell("Netto (€)", true);
+            HeaderCell("MwSt.", true);
+            HeaderCell("Brutto (€)", true);
+        });
+    }
+
+    /// Renders one data row with alternating background.
+    private static void AddTableRow(TableDescriptor table, int rowIndex,
+        string name, int qty, decimal unitPrice, decimal net, decimal vatRate, decimal gross)
+    {
+        var bg = rowIndex % 2 == 0 ? White : AltRow;
+        void Cell(string text, bool right = false, bool italic = false)
+        {
+            var cell = table.Cell().Background(bg).Padding(4);
+            var t = cell.Text(text).FontSize(9).FontColor(DarkText);
+            if (right) t.AlignRight();
+            if (italic) t.Italic();
+        }
+        Cell(name);
+        Cell(qty.ToString(), right: true);
+        Cell(unitPrice.ToString("F2"), right: true);
+        Cell(net.ToString("F2"), right: true);
+        Cell($"{vatRate * 100:F0}%", right: true);
+        Cell(gross.ToString("F2"), right: true);
+    }
+
+    /// Renders the totals summary block (right-aligned).
+    private static void AddTotalsSummary(ColumnDescriptor col, decimal net, decimal vat, decimal gross)
+    {
+        col.Item().PaddingTop(10).AlignRight().Width(200).Column(totals =>
+        {
+            totals.Item().Row(r =>
+            {
+                r.RelativeItem().Text("Netto gesamt").FontSize(9).FontColor(DarkText);
+                r.ConstantItem(80).AlignRight().Text($"{net:F2} €").FontSize(9).FontColor(DarkText);
+            });
+            totals.Item().Row(r =>
+            {
+                r.RelativeItem().Text("MwSt. gesamt").FontSize(9).FontColor(DarkText);
+                r.ConstantItem(80).AlignRight().Text($"{vat:F2} €").FontSize(9).FontColor(DarkText);
+            });
+            totals.Item().PaddingTop(4)
+                .LineHorizontal(1).LineColor(Primary);
+            totals.Item().PaddingTop(4).Row(r =>
+            {
+                r.RelativeItem().Text("Brutto gesamt").Bold().FontSize(11).FontColor(Primary);
+                r.ConstantItem(80).AlignRight().Text($"{gross:F2} €").Bold().FontSize(11).FontColor(Primary);
+            });
+        });
+    }
+
+    /// Renders the bank/payment info box.
+    private static void AddPaymentBox(ColumnDescriptor col, CompanySettingsDto c, string paymentNote)
+    {
+        if (string.IsNullOrWhiteSpace(c.Iban)) return;
+        col.Item().PaddingTop(14).Border(1).BorderColor(LightGray).Padding(10).Column(box =>
+        {
+            box.Item().Text("Zahlungsinformationen").Bold().FontSize(9).FontColor(Primary);
+            box.Item().PaddingTop(4).Text(paymentNote).FontSize(9).FontColor(DarkText);
+            if (!string.IsNullOrWhiteSpace(c.Iban))
+                box.Item().Text($"IBAN: {c.Iban}").FontSize(9).FontColor(DarkText);
+            var bicBank = string.Join("  |  ", new[] { c.Bic, c.BankName }.Where(x => !string.IsNullOrWhiteSpace(x)));
+            if (!string.IsNullOrWhiteSpace(bicBank))
+                box.Item().Text(bicBank).FontSize(9).FontColor(DarkText);
+        });
+    }
+
+    /// Renders the legal footer line.
+    private static void AddFooter(PageDescriptor page, CompanySettingsDto c)
+    {
+        page.Footer().PaddingTop(6).Column(col =>
+        {
+            col.Item().LineHorizontal(0.5f).LineColor(LightGray);
+            col.Item().PaddingTop(4).Row(row =>
+            {
+                // Legal info left
+                row.RelativeItem().Text(t =>
+                {
+                    var parts = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(c.CommercialRegNo))
+                        parts.Add($"FN {c.CommercialRegNo}");
+                    if (!string.IsNullOrWhiteSpace(c.CommercialCourt))
+                        parts.Add(c.CommercialCourt);
+                    if (!string.IsNullOrWhiteSpace(c.VatId))
+                        parts.Add($"UID: {c.VatId}");
+                    t.Span(string.Join("  ·  ", parts)).FontSize(7).FontColor(Colors.Grey.Medium);
+                });
+
+                // Page number right
+                row.ConstantItem(60).AlignRight().Text(x =>
+                {
+                    x.Span("Seite ").FontSize(7).FontColor(Colors.Grey.Medium);
+                    x.CurrentPageNumber().FontSize(7).FontColor(Colors.Grey.Medium);
+                    x.Span(" / ").FontSize(7).FontColor(Colors.Grey.Medium);
+                    x.TotalPages().FontSize(7).FontColor(Colors.Grey.Medium);
+                });
+            });
+        });
+    }
+
+    // ── Public PDF generators ────────────────────────────────────────────────
+
+    public byte[] GenerateQuotePdf(QuoteDto quote, string customerName, DateTime eventDate, CompanySettingsDto company)
+    {
+        var logo = GetLogoBytes(company);
         return Document.Create(container =>
         {
             container.Page(page =>
             {
                 page.Size(PageSizes.A4);
                 page.Margin(2, Unit.Centimetre);
-                page.DefaultTextStyle(x => x.FontSize(10));
+                page.DefaultTextStyle(x => x.FontSize(10).FontColor(DarkText));
 
                 page.Header().Column(col =>
                 {
-                    col.Item().Text("CaterMate – Angebot").Bold().FontSize(18);
-                    col.Item().Text($"Kunde: {customerName}");
-                    col.Item().Text($"Veranstaltungsdatum: {eventDate:dd.MM.yyyy}");
-                    col.Item().Text($"Erstellt am: {quote.CreatedAt:dd.MM.yyyy}");
+                    AddCompanyHeader(col, company, logo);
                 });
 
-                page.Content().PaddingTop(10).Column(col =>
+                page.Content().Column(col =>
                 {
+                    // Document title + meta
+                    AddDocumentTitleBar(col, "Angebot",
+                        $"Angebotsnummer: A-{quote.Id:D5}",
+                        $"Erstellt am: {quote.CreatedAt:dd.MM.yyyy}");
+
+                    // Recipient block
+                    col.Item().PaddingBottom(10).Row(row =>
+                    {
+                        row.RelativeItem().Column(r =>
+                        {
+                            r.Item().Text("An:").FontSize(8).FontColor(Colors.Grey.Medium);
+                            r.Item().Text(customerName).Bold().FontSize(11).FontColor(DarkText);
+                            r.Item().Text($"Veranstaltungsdatum: {eventDate:dd.MM.yyyy}")
+                                .FontSize(9).FontColor(DarkText);
+                        });
+                    });
+
+                    // Positions table
                     col.Item().Table(table =>
                     {
                         table.ColumnsDefinition(cols =>
@@ -35,75 +245,135 @@ public class PdfService : IPdfService
                             cols.RelativeColumn(1);
                             cols.RelativeColumn(2);
                             cols.RelativeColumn(2);
-                            cols.RelativeColumn(2);
+                            cols.RelativeColumn(1.5f);
                             cols.RelativeColumn(2);
                         });
+                        AddTableHeader(table);
 
-                        table.Header(header =>
-                        {
-                            header.Cell().Text("Bezeichnung").Bold();
-                            header.Cell().Text("Menge").Bold();
-                            header.Cell().AlignRight().Text("EP (€)").Bold();
-                            header.Cell().AlignRight().Text("Netto (€)").Bold();
-                            header.Cell().AlignRight().Text("MwSt.").Bold();
-                            header.Cell().AlignRight().Text("Brutto (€)").Bold();
-                        });
-
+                        var rowIndex = 0;
                         foreach (var pos in quote.Positions)
                         {
-                            table.Cell().Text(pos.MenuItemName);
-                            table.Cell().Text(pos.Quantity.ToString());
-                            table.Cell().AlignRight().Text(pos.UnitPrice.ToString("F2"));
-                            table.Cell().AlignRight().Text(pos.TotalNet.ToString("F2"));
-                            table.Cell().AlignRight().Text($"{pos.VatRate * 100:F0}%");
-                            table.Cell().AlignRight().Text(pos.TotalGross.ToString("F2"));
+                            AddTableRow(table, rowIndex++,
+                                pos.MenuItemName, pos.Quantity, pos.UnitPrice,
+                                pos.TotalNet, pos.VatRate, pos.TotalGross);
                         }
 
-                        table.Cell().ColumnSpan(3).Text("Verwaltungspauschale").Italic();
-                        table.Cell().AlignRight().Text(quote.AdminFee.ToString("F2")).Italic();
-                        table.Cell();
-                        table.Cell();
+                        // Admin fee row
+                        var bg = rowIndex % 2 == 0 ? White : AltRow;
+                        table.Cell().ColumnSpan(3).Background(bg).Padding(4)
+                            .Text("Verwaltungspauschale").Italic().FontSize(9).FontColor(DarkText);
+                        table.Cell().Background(bg).Padding(4)
+                            .AlignRight().Text(quote.AdminFee.ToString("F2")).Italic().FontSize(9).FontColor(DarkText);
+                        table.Cell().Background(bg).Padding(4);
+                        table.Cell().Background(bg).Padding(4);
                     });
 
-                    col.Item().PaddingTop(10).AlignRight().Column(totals =>
-                    {
-                        totals.Item().Text($"Netto gesamt: {quote.TotalNet:F2} €");
-                        totals.Item().Text($"MwSt. gesamt: {quote.TotalVat:F2} €");
-                        totals.Item().Text($"Brutto gesamt: {quote.TotalGross:F2} €").Bold().FontSize(12);
-                    });
+                    AddTotalsSummary(col, quote.TotalNet, quote.TotalVat, quote.TotalGross);
+
+                    // Offer validity note
+                    col.Item().PaddingTop(12).Text(
+                        "Dieses Angebot ist 30 Tage gültig. Wir freuen uns auf Ihre Bestätigung.")
+                        .FontSize(9).FontColor(Colors.Grey.Medium).Italic();
+
+                    AddPaymentBox(col, company, "Bitte überweisen Sie den Betrag nach Bestätigung des Angebots.");
                 });
 
-                page.Footer().AlignCenter().Text(x =>
-                {
-                    x.CurrentPageNumber();
-                    x.Span(" / ");
-                    x.TotalPages();
-                });
+                AddFooter(page, company);
             });
         }).GeneratePdf();
     }
 
-    public byte[] GeneratePurchaseListPdf(PurchaseListDto purchaseList, int guestCount)
+    public byte[] GenerateInvoicePdf(InvoiceDto invoice, CompanySettingsDto company)
     {
+        var logo = GetLogoBytes(company);
         return Document.Create(container =>
         {
             container.Page(page =>
             {
                 page.Size(PageSizes.A4);
                 page.Margin(2, Unit.Centimetre);
-                page.DefaultTextStyle(x => x.FontSize(10));
+                page.DefaultTextStyle(x => x.FontSize(10).FontColor(DarkText));
 
                 page.Header().Column(col =>
                 {
-                    col.Item().Text("CaterMate – Einkaufsliste").Bold().FontSize(18);
-                    col.Item().Text($"Auftrag #{purchaseList.OrderId} | {guestCount} Personen | Sicherheitsaufschlag: {purchaseList.SafetyMargin * 100:F0}%");
+                    AddCompanyHeader(col, company, logo);
                 });
 
-                page.Content().PaddingTop(10).Column(col =>
+                page.Content().Column(col =>
                 {
+                    AddDocumentTitleBar(col, "Rechnung",
+                        $"Rechnungsnummer: {invoice.InvoiceNumber}",
+                        $"Datum: {invoice.IssueDate:dd.MM.yyyy}  ·  Fällig: {invoice.DueDate:dd.MM.yyyy}");
+
+                    // Recipient
+                    col.Item().PaddingBottom(10).Column(r =>
+                    {
+                        r.Item().Text("Rechnungsempfänger:").FontSize(8).FontColor(Colors.Grey.Medium);
+                        r.Item().Text(invoice.CustomerName).Bold().FontSize(11).FontColor(DarkText);
+                    });
+
+                    // Positions table
+                    col.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(cols =>
+                        {
+                            cols.RelativeColumn(4);
+                            cols.RelativeColumn(1);
+                            cols.RelativeColumn(2);
+                            cols.RelativeColumn(2);
+                            cols.RelativeColumn(1.5f);
+                            cols.RelativeColumn(2);
+                        });
+                        AddTableHeader(table);
+
+                        var rowIndex = 0;
+                        foreach (var pos in invoice.Positions)
+                        {
+                            AddTableRow(table, rowIndex++,
+                                pos.MenuItemName, pos.Quantity, pos.UnitPrice,
+                                pos.TotalNet, pos.VatRate, pos.TotalGross);
+                        }
+                    });
+
+                    AddTotalsSummary(col, invoice.TotalNet, invoice.TotalVat, invoice.TotalGross);
+
+                    AddPaymentBox(col, company,
+                        $"Bitte überweisen Sie {invoice.TotalGross:F2} € bis {invoice.DueDate:dd.MM.yyyy}.");
+                });
+
+                AddFooter(page, company);
+            });
+        }).GeneratePdf();
+    }
+
+    public byte[] GeneratePurchaseListPdf(PurchaseListDto purchaseList, int guestCount, CompanySettingsDto company)
+    {
+        var logo = GetLogoBytes(company);
+        return Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(2, Unit.Centimetre);
+                page.DefaultTextStyle(x => x.FontSize(10).FontColor(DarkText));
+
+                page.Header().Column(col =>
+                {
+                    AddCompanyHeader(col, company, logo);
+                });
+
+                page.Content().Column(col =>
+                {
+                    AddDocumentTitleBar(col, "Einkaufsliste",
+                        $"Auftrag #{purchaseList.OrderId}  ·  {guestCount} Personen",
+                        $"Sicherheitsaufschlag: {purchaseList.SafetyMargin * 100:F0}%");
+
                     foreach (var group in purchaseList.Groups)
                     {
-                        col.Item().PaddingTop(8).Text(group.Category).Bold().FontSize(11);
+                        // Category header bar
+                        col.Item().PaddingTop(10).Background(Primary).Padding(5)
+                            .Text(group.Category).Bold().FontSize(10).FontColor(White);
+
                         col.Item().Table(table =>
                         {
                             table.ColumnsDefinition(cols =>
@@ -111,104 +381,59 @@ public class PdfService : IPdfService
                                 cols.RelativeColumn(5);
                                 cols.RelativeColumn(2);
                                 cols.RelativeColumn(1);
+                                cols.ConstantColumn(20);
                             });
 
-                            table.Header(header =>
+                            // Group header
+                            table.Header(h =>
                             {
-                                header.Cell().Text("Zutat").Bold();
-                                header.Cell().AlignRight().Text("Menge").Bold();
-                                header.Cell().Text("Einheit").Bold();
+                                void H(string t, bool right = false)
+                                {
+                                    var cell = h.Cell().Background(AltRow).Padding(4);
+                                    var txt = cell.Text(t).Bold().FontSize(8).FontColor(DarkText);
+                                    if (right) txt.AlignRight();
+                                }
+                                H("Zutat");
+                                H("Menge", right: true);
+                                H("Einheit");
+                                H("☐");
                             });
 
+                            var rowIndex = 0;
                             foreach (var item in group.Items)
                             {
-                                table.Cell().Text(item.IngredientName);
-                                table.Cell().AlignRight().Text(item.RequiredQuantity.ToString("F2"));
-                                table.Cell().Text(item.Unit);
+                                var bg = rowIndex++ % 2 == 0 ? White : AltRow;
+                                table.Cell().Background(bg).Padding(3).Text(item.IngredientName).FontSize(9);
+                                table.Cell().Background(bg).Padding(3).AlignRight()
+                                    .Text(item.RequiredQuantity.ToString("F2")).FontSize(9);
+                                table.Cell().Background(bg).Padding(3).Text(item.Unit).FontSize(9);
+                                table.Cell().Background(bg).Padding(3).Text("").FontSize(9);
                             }
                         });
                     }
                 });
 
-                page.Footer().AlignCenter().Text(x =>
-                {
-                    x.CurrentPageNumber();
-                    x.Span(" / ");
-                    x.TotalPages();
-                });
+                AddFooter(page, company);
             });
         }).GeneratePdf();
     }
 
-    public byte[] GenerateInvoicePdf(InvoiceDto invoice)
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /// Tries to read the logo file synchronously from disk (called within sync QuestPDF render).
+    private static byte[]? GetLogoBytes(CompanySettingsDto company)
     {
-        return Document.Create(container =>
+        // CompanySettingsService exposes HasLogo but not the path.
+        // We re-read from the known upload directory using a glob pattern.
+        if (!company.HasLogo) return null;
+        try
         {
-            container.Page(page =>
-            {
-                page.Size(PageSizes.A4);
-                page.Margin(2, Unit.Centimetre);
-                page.DefaultTextStyle(x => x.FontSize(10));
-
-                page.Header().Column(col =>
-                {
-                    col.Item().Text("CaterMate – Rechnung").Bold().FontSize(18);
-                    col.Item().Text($"Rechnungsnummer: {invoice.InvoiceNumber}").Bold();
-                    col.Item().Text($"Kunde: {invoice.CustomerName}");
-                    col.Item().Text($"Rechnungsdatum: {invoice.IssueDate:dd.MM.yyyy}");
-                    col.Item().Text($"Fällig bis: {invoice.DueDate:dd.MM.yyyy}");
-                });
-
-                page.Content().PaddingTop(10).Column(col =>
-                {
-                    col.Item().Table(table =>
-                    {
-                        table.ColumnsDefinition(cols =>
-                        {
-                            cols.RelativeColumn(4);
-                            cols.RelativeColumn(1);
-                            cols.RelativeColumn(2);
-                            cols.RelativeColumn(2);
-                            cols.RelativeColumn(2);
-                            cols.RelativeColumn(2);
-                        });
-
-                        table.Header(header =>
-                        {
-                            header.Cell().Text("Bezeichnung").Bold();
-                            header.Cell().Text("Menge").Bold();
-                            header.Cell().AlignRight().Text("EP (€)").Bold();
-                            header.Cell().AlignRight().Text("Netto (€)").Bold();
-                            header.Cell().AlignRight().Text("MwSt.").Bold();
-                            header.Cell().AlignRight().Text("Brutto (€)").Bold();
-                        });
-
-                        foreach (var pos in invoice.Positions)
-                        {
-                            table.Cell().Text(pos.MenuItemName);
-                            table.Cell().Text(pos.Quantity.ToString());
-                            table.Cell().AlignRight().Text(pos.UnitPrice.ToString("F2"));
-                            table.Cell().AlignRight().Text(pos.TotalNet.ToString("F2"));
-                            table.Cell().AlignRight().Text($"{pos.VatRate * 100:F0}%");
-                            table.Cell().AlignRight().Text(pos.TotalGross.ToString("F2"));
-                        }
-                    });
-
-                    col.Item().PaddingTop(10).AlignRight().Column(totals =>
-                    {
-                        totals.Item().Text($"Netto gesamt: {invoice.TotalNet:F2} €");
-                        totals.Item().Text($"MwSt. gesamt: {invoice.TotalVat:F2} €");
-                        totals.Item().Text($"Brutto gesamt: {invoice.TotalGross:F2} €").Bold().FontSize(12);
-                    });
-                });
-
-                page.Footer().AlignCenter().Text(x =>
-                {
-                    x.CurrentPageNumber();
-                    x.Span(" / ");
-                    x.TotalPages();
-                });
-            });
-        }).GeneratePdf();
+            var files = Directory.GetFiles("/app/uploads", "logo_*");
+            return files.Length > 0 ? File.ReadAllBytes(files.OrderByDescending(f => f).First()) : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

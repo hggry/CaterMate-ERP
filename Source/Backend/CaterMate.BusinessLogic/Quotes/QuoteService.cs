@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using CaterMate.BusinessLogic.Pdf;
+using CaterMate.BusinessLogic.Settings;
 using CaterMate.Db.Entities;
 using CaterMate.Db.Repositories;
 using CaterMate.DTOs.Responses;
@@ -13,6 +14,7 @@ public class QuoteService : IQuoteService
     private readonly IOrderRepository _orderRepo;
     private readonly ICustomerRepository _customerRepo;
     private readonly IPdfService _pdfService;
+    private readonly ICompanySettingsService _companySettings;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly decimal _adminFee;
     private readonly string _sendQuoteWebhookUrl;
@@ -22,6 +24,7 @@ public class QuoteService : IQuoteService
         IOrderRepository orderRepo,
         ICustomerRepository customerRepo,
         IPdfService pdfService,
+        ICompanySettingsService companySettings,
         IHttpClientFactory httpClientFactory,
         IConfiguration config)
     {
@@ -29,6 +32,7 @@ public class QuoteService : IQuoteService
         _orderRepo = orderRepo;
         _customerRepo = customerRepo;
         _pdfService = pdfService;
+        _companySettings = companySettings;
         _httpClientFactory = httpClientFactory;
         _adminFee = decimal.TryParse(config["VERWALTUNGSPAUSCHALE"], out var fee) ? fee : 200m;
         _sendQuoteWebhookUrl = config["QUOTE_WEBHOOK_URL"] ?? "";
@@ -104,7 +108,8 @@ public class QuoteService : IQuoteService
         var order = await _orderRepo.GetByIdAsync(orderId)
             ?? throw new KeyNotFoundException($"Order {orderId} not found");
         var customer = await _customerRepo.GetByIdAsync(order.CustomerId);
-        return _pdfService.GenerateQuotePdf(dto, customer?.Name ?? "", order.EventDate);
+        var company = await _companySettings.GetAsync();
+        return _pdfService.GenerateQuotePdf(dto, customer?.Name ?? "", order.EventDate, company);
     }
 
     public async Task SendToCustomerAsync(int orderId)

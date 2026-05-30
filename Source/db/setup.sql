@@ -207,6 +207,30 @@ CREATE TABLE IncomingInvoiceSuggestions (
     CONSTRAINT fk_iis_ingredient      FOREIGN KEY (IngredientId)      REFERENCES Ingredients      (Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE CompanySettings (
+    Id              INT            NOT NULL AUTO_INCREMENT,
+    CompanyName     VARCHAR(200)   NOT NULL DEFAULT '',
+    Street          VARCHAR(200)   NULL,
+    PostalCode      VARCHAR(20)    NULL,
+    City            VARCHAR(100)   NULL,
+    Country         VARCHAR(100)   NULL DEFAULT 'Österreich',
+    Phone           VARCHAR(50)    NULL,
+    Email           VARCHAR(200)   NULL,
+    Website         VARCHAR(300)   NULL,
+    VatId           VARCHAR(50)    NULL,
+    TaxNumber       VARCHAR(50)    NULL,
+    Iban            VARCHAR(50)    NULL,
+    Bic             VARCHAR(20)    NULL,
+    BankName        VARCHAR(200)   NULL,
+    CommercialRegNo VARCHAR(100)   NULL,
+    CommercialCourt VARCHAR(200)   NULL,
+    LogoPath        VARCHAR(500)   NULL,
+    UpdatedAt       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO CompanySettings (Id, CompanyName) VALUES (1, 'CaterMate');
+
 -- ============================================================
 -- Additional indexes
 -- ============================================================
@@ -392,3 +416,5 @@ CREATE TABLE IF NOT EXISTS Invoices (Id INT NOT NULL AUTO_INCREMENT, OrderId INT
 CREATE TABLE IF NOT EXISTS InvoicePositions (Id INT NOT NULL AUTO_INCREMENT, InvoiceId INT NOT NULL, MenuItemId INT NOT NULL, MenuItemName VARCHAR(200) NOT NULL, Quantity INT NOT NULL, UnitPrice DECIMAL(10,2) NOT NULL, TotalNet DECIMAL(10,2) NOT NULL, VatRate DECIMAL(5,4) NOT NULL, VatAmount DECIMAL(10,2) NOT NULL, TotalGross DECIMAL(10,2) NOT NULL, PRIMARY KEY (Id), CONSTRAINT fk_t_ip_invoice FOREIGN KEY (InvoiceId) REFERENCES Invoices (Id), CONSTRAINT fk_t_ip_menuitem FOREIGN KEY (MenuItemId) REFERENCES MenuItems (Id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS IncomingInvoices (Id INT NOT NULL AUTO_INCREMENT, FilePath VARCHAR(500) NOT NULL, Status VARCHAR(50) NOT NULL DEFAULT 'Pending', CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, ProcessedAt DATETIME NULL, PRIMARY KEY (Id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS IncomingInvoiceSuggestions (Id INT NOT NULL AUTO_INCREMENT, IncomingInvoiceId INT NOT NULL, IngredientId INT NOT NULL, IngredientName VARCHAR(200) NOT NULL, CurrentPrice DECIMAL(10,4) NOT NULL, SuggestedPrice DECIMAL(10,4) NOT NULL, Accepted TINYINT(1) NULL, PRIMARY KEY (Id), CONSTRAINT fk_t_iis_incominginvoice FOREIGN KEY (IncomingInvoiceId) REFERENCES IncomingInvoices (Id), CONSTRAINT fk_t_iis_ingredient FOREIGN KEY (IngredientId) REFERENCES Ingredients (Id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS CompanySettings (Id INT NOT NULL AUTO_INCREMENT, CompanyName VARCHAR(200) NOT NULL DEFAULT '', Street VARCHAR(200) NULL, PostalCode VARCHAR(20) NULL, City VARCHAR(100) NULL, Country VARCHAR(100) NULL DEFAULT 'Österreich', Phone VARCHAR(50) NULL, Email VARCHAR(200) NULL, Website VARCHAR(300) NULL, VatId VARCHAR(50) NULL, TaxNumber VARCHAR(50) NULL, Iban VARCHAR(50) NULL, Bic VARCHAR(20) NULL, BankName VARCHAR(200) NULL, CommercialRegNo VARCHAR(100) NULL, CommercialCourt VARCHAR(200) NULL, LogoPath VARCHAR(500) NULL, UpdatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (Id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO CompanySettings (Id, CompanyName) VALUES (1, 'CaterMate') ON DUPLICATE KEY UPDATE CompanyName = CompanyName;
