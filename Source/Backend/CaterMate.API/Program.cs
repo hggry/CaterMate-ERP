@@ -15,6 +15,7 @@ using CaterMate.BusinessLogic.Stock;
 using CaterMate.BusinessLogic.Suggestions;
 using CaterMate.Db;
 using CaterMate.Db.Repositories;
+using CaterMate.Db.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using QuestPDF.Infrastructure;
@@ -126,6 +127,7 @@ app.MapControllers();
 
 // Admin seeding on startup — failures are logged but do not crash the app
 await SeedAdminUserAsync(app);
+await SeedDemoOrdersAsync(app);
 
 await app.RunAsync();
 
@@ -157,6 +159,36 @@ static async Task SeedAdminUserAsync(WebApplication app)
         catch (Exception ex)
         {
             Log.Warning(ex, "Admin seeding failed after all retries — continuing without seeding");
+            return;
+        }
+    }
+}
+
+static async Task SeedDemoOrdersAsync(WebApplication app)
+{
+    var cfg = app.Services.GetRequiredService<IConfiguration>();
+    if (!string.Equals(cfg["SEED_DEMO_ORDERS"], "true", StringComparison.OrdinalIgnoreCase))
+        return;
+
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<DapperContext>();
+
+    for (var attempt = 1; attempt <= 10; attempt++)
+    {
+        try
+        {
+            await DemoOrderSeeder.SeedAsync(context);
+            Log.Information("Demo orders seeded");
+            return;
+        }
+        catch (Exception ex) when (attempt < 10)
+        {
+            Log.Warning("Demo order seeding delayed (attempt {Attempt}/10): {Message}", attempt, ex.Message);
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Demo order seeding failed after all retries - continuing without demo data");
             return;
         }
     }

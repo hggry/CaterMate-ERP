@@ -31,6 +31,7 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_HTTP_PORTS: "8080"
       ConnectionStrings__DefaultConnection: "Server=db;Port=3306;Database=${DB_NAME};User ID=${DB_USER};Password=${DB_PASSWORD};CharSet=utf8mb4;"
+      SEED_DEMO_ORDERS: ${SEED_DEMO_ORDERS:-true}
     ports:
       - "${BACKEND_PORT}:8080"
     depends_on:
