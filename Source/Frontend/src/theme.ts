@@ -24,5 +24,24 @@ export const CaterMatePreset = definePreset(Aura, {
       900: '#2c3c0d',
       950: '#1a2407',
     },
+    colorScheme: {
+      // Dark mode uses a cool-neutral dark grey scale — readable, settled, not brown.
+      dark: {
+        surface: {
+          0:   '#ffffff',
+          50:  '#f4f4f6',
+          100: '#e2e2e8',
+          200: '#c4c4ce',
+          300: '#9898a6',
+          400: '#6e6e7e',
+          500: '#4e4e5a',
+          600: '#3a3a44',
+          700: '#2a2a32',  // primary card/panel surface
+          800: '#202026',
+          900: '#18181e',  // page background
+          950: '#111116',
+        },
+      },
+    },
   },
 })

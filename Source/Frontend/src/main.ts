@@ -18,7 +18,7 @@ app.use(PrimeVue, {
   theme: {
     preset: CaterMatePreset,
     options: {
-      darkModeSelector: false,
+      darkModeSelector: '.app-dark',
     },
   },
   locale: {

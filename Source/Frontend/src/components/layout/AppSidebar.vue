@@ -5,6 +5,7 @@ import Button from 'primevue/button'
 import Badge from 'primevue/badge'
 import { useAuthStore } from '@/stores/authStore'
 import { useSuggestionsStore } from '@/stores/suggestionsStore'
+import { useThemeStore } from '@/stores/themeStore'
 
 interface NavItem {
   label: string
@@ -17,6 +18,7 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const suggestions = useSuggestionsStore()
+const theme = useThemeStore()
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', icon: 'pi pi-chart-bar', to: { name: 'dashboard' } },
@@ -68,6 +70,10 @@ function logout(): void {
         <i class="pi pi-user" />
         {{ auth.username ?? 'Unbekannt' }}
       </span>
+      <button type="button" class="app-sidebar__theme-toggle" @click="theme.toggle">
+        <i :class="theme.isDark ? 'pi pi-sun' : 'pi pi-moon'" />
+        <span>{{ theme.isDark ? 'Hell' : 'Dunkel' }}</span>
+      </button>
       <Button
         label="Abmelden"
         icon="pi pi-sign-out"
@@ -179,6 +185,26 @@ function logout(): void {
   padding: 0 0.5rem;
   font-size: 0.875rem;
   color: var(--p-text-muted-color);
+}
+
+.app-sidebar__theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--p-border-radius, 6px);
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+  text-align: left;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.app-sidebar__theme-toggle:hover {
+  border-color: var(--p-primary-color);
+  color: var(--p-primary-color);
 }
 
 @media (max-width: 48rem) {

@@ -24,6 +24,21 @@ import ConfirmDialog from 'primevue/confirmdialog'
   --catermate-bg: var(--cm-basis-hell);
 }
 
+/* ── Dark Mode Token Overrides ──────────────────────────────────────────── */
+/* Applied when <html class="app-dark"> is set by themeStore.               */
+/* Cool-neutral dark scale — greys with a slight blue-grey undertone.       */
+.app-dark {
+  --catermate-bg:   #18181e;   /* Page background — deep neutral dark      */
+  --cm-basis-hell:  #eeeef2;   /* Primary text — cool near-white           */
+  --cm-sand:        #2a2a32;   /* Elevated surface / alt-rows              */
+  --cm-caramel:     #b8a882;   /* Muted accent text — still warm but subtle */
+  --cm-espresso:    #eeeef2;   /* Repurposed as light text in dark mode    */
+  --cm-avocado:     #8cc42e;   /* Avocado (brighter for dark bg contrast)  */
+  --cm-teal:        #25b5a3;   /* Teal (brighter)                          */
+  --cm-teal-light:  #6dd0c6;   /* Light teal (brighter)                    */
+  --cm-orange:      #f04828;   /* Rot-Orange (slightly brighter)           */
+}
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
