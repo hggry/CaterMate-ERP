@@ -8,8 +8,10 @@ const emit = defineEmits<{ select: [status: OrderStatus] }>()
 
 const { labelFor } = useOrderStatus()
 
-// The pipeline tracks open work, so the terminal "Abgerechnet" stage is excluded.
-const OPEN_STAGES = ORDER_STATUSES.filter((status) => status !== 'Abgerechnet')
+// The pipeline tracks open work, so the completed stages ("Durchgeführt",
+// "Abgerechnet") are excluded.
+const CLOSED_STAGES: OrderStatus[] = ['Durchgeführt', 'Abgerechnet']
+const OPEN_STAGES = ORDER_STATUSES.filter((status) => !CLOSED_STAGES.includes(status))
 
 const rows = computed(() => {
   const counts = OPEN_STAGES.map((status) => props.ordersByStatus[status] ?? 0)
@@ -46,17 +48,18 @@ const rows = computed(() => {
 .funnel {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   gap: 0.375rem;
   height: 100%;
 }
 
+/* Each stage row grows to share the available height evenly. */
 .funnel__row {
   display: grid;
   grid-template-columns: 8rem 1fr 2rem;
   align-items: center;
   gap: 0.625rem;
-  padding: 0.25rem 0;
+  flex: 1;
+  min-height: 1.75rem;
   background: none;
   border: none;
   cursor: pointer;
