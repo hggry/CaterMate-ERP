@@ -16,11 +16,13 @@ const to = ref<Date | null>(null)
 
 const { data: orders, loading, error, execute } = useApi(ordersApi.list)
 
-// Only events that already happened (before today).
+// Only settled orders that already happened (before today).
 const pastOrders = computed(() => {
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
-  return (orders.value ?? []).filter((o) => new Date(o.eventDate) < startOfToday)
+  return (orders.value ?? []).filter(
+    (o) => new Date(o.eventDate) < startOfToday && o.status === 'Abgerechnet',
+  )
 })
 
 function load(): void {

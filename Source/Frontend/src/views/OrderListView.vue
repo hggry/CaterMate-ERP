@@ -26,13 +26,13 @@ const to = ref<Date | null>(null)
 
 const { data: orders, loading, error, execute } = useApi(ordersApi.list)
 
-// Only upcoming / today's events; past events live in the archive. Cancelled
-// orders are hidden unless the user explicitly filters for them.
-const upcomingOrders = computed(() => {
+// Past orders stay visible until they are settled. Cancelled orders are hidden
+// unless the user explicitly filters for them.
+const activeOrders = computed(() => {
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
   return (orders.value ?? []).filter((o) => {
-    if (new Date(o.eventDate) < startOfToday) return false
+    if (new Date(o.eventDate) < startOfToday && o.status === 'Abgerechnet') return false
     if (o.status === CANCELLED_STATUS && status.value !== CANCELLED_STATUS) return false
     return true
   })
@@ -89,11 +89,11 @@ function onOrderCreated(order: OrderDto): void {
     <CreateOrderDialog v-model:visible="createDialogVisible" @saved="onOrderCreated" />
 
     <OrdersTable
-      :orders="upcomingOrders"
+      :orders="activeOrders"
       :loading="loading"
       :error="!!error"
       :sort-order="1"
-      empty-text="Keine anstehenden Aufträge."
+      empty-text="Keine aktiven Aufträge."
       @row-click="openOrder"
     />
   </div>
