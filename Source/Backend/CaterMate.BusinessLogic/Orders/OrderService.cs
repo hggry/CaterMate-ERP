@@ -114,8 +114,10 @@ public class OrderService : IOrderService
 
         if (request.OrderMenuItems.Count > 0)
         {
-            var menuItemIds = request.OrderMenuItems.Select(m => m.MenuItemId).ToArray();
-            await _orderRepo.SetMenuItemsAsync(id, menuItemIds);
+            var items = request.OrderMenuItems
+                .Select(m => (m.MenuItemId, m.Count))
+                .ToList();
+            await _orderRepo.SetMenuItemsWithCountAsync(id, items);
         }
 
         return await GetByIdAsync(id);

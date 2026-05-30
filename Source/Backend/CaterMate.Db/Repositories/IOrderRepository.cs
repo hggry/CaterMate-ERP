@@ -11,6 +11,7 @@ public interface IOrderRepository
     Task UpdateAsync(OrderEntity order);
     Task UpdateStatusAsync(int id, string status);
     Task SetMenuItemsAsync(int orderId, IEnumerable<int> menuItemIds);
+    Task SetMenuItemsWithCountAsync(int orderId, IReadOnlyCollection<(int MenuItemId, int? Count)> items);
     Task DeleteAsync(int id);
     Task<bool> ExistsAsync(int id);
 }

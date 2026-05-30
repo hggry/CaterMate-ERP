@@ -17,7 +17,7 @@ public class OrderRepository : IOrderRepository
     private const string SelectById = "SELECT * FROM Orders WHERE Id = @Id";
 
     private const string SelectAssignedMenuItems = @"
-        SELECT m.* FROM MenuItems m
+        SELECT m.*, omi.`Count` AS AssignedCount FROM MenuItems m
         INNER JOIN OrderMenuItems omi ON omi.MenuItemId = m.Id
         WHERE omi.OrderId = @OrderId";
 
@@ -36,7 +36,7 @@ public class OrderRepository : IOrderRepository
     private const string UpdateStatus = "UPDATE Orders SET Status = @Status WHERE Id = @Id";
 
     private const string DeleteMenuItems = "DELETE FROM OrderMenuItems WHERE OrderId = @OrderId";
-    private const string InsertMenuItem = "INSERT INTO OrderMenuItems (OrderId, MenuItemId) VALUES (@OrderId, @MenuItemId)";
+    private const string InsertMenuItem = "INSERT INTO OrderMenuItems (OrderId, MenuItemId, `Count`) VALUES (@OrderId, @MenuItemId, @Count)";
 
     private const string Delete = "DELETE FROM Orders WHERE Id = @Id";
     private const string Exists = "SELECT COUNT(*) FROM Orders WHERE Id = @Id";
@@ -79,14 +79,17 @@ public class OrderRepository : IOrderRepository
         await conn.ExecuteAsync(UpdateStatus, new { Id = id, Status = status });
     }
 
-    public async Task SetMenuItemsAsync(int orderId, IEnumerable<int> menuItemIds)
+    public Task SetMenuItemsAsync(int orderId, IEnumerable<int> menuItemIds) =>
+        SetMenuItemsWithCountAsync(orderId, menuItemIds.Select(id => (id, (int?)null)).ToList());
+
+    public async Task SetMenuItemsWithCountAsync(int orderId, IReadOnlyCollection<(int MenuItemId, int? Count)> items)
     {
         using var conn = _context.CreateConnection();
         await conn.OpenAsync();
         using var tx = await conn.BeginTransactionAsync();
         await conn.ExecuteAsync(DeleteMenuItems, new { OrderId = orderId }, tx);
-        foreach (var menuItemId in menuItemIds)
-            await conn.ExecuteAsync(InsertMenuItem, new { OrderId = orderId, MenuItemId = menuItemId }, tx);
+        foreach (var (menuItemId, count) in items)
+            await conn.ExecuteAsync(InsertMenuItem, new { OrderId = orderId, MenuItemId = menuItemId, Count = count }, tx);
         await tx.CommitAsync();
     }
 

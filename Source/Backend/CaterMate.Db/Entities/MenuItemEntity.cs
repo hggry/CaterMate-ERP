@@ -9,4 +9,8 @@ public class MenuItemEntity
     public decimal PurchaseCostPerPerson { get; set; }
     public string? Allergens { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    // Per-order portion count from the OrderMenuItems join table; null for manually
+    // assigned items without an explicit count (callers fall back to GuestCount).
+    public int? AssignedCount { get; set; }
 }

@@ -5,7 +5,9 @@
       "mcp__claude_ai_n8n__search_workflows",
       "mcp__claude_ai_n8n__get_sdk_reference",
       "PowerShell(docker exec source-n8n-1 ls /workflows 2>&1)",
-      "PowerShell(docker exec source-n8n-1 n8n list:workflow 2>&1)"
+      "PowerShell(docker exec source-n8n-1 n8n list:workflow 2>&1)",
+      "Read(//c/Repositories/CaterMate-ERP/**)",
+      "Bash(python -c ' *)"
     ]
   }
 }

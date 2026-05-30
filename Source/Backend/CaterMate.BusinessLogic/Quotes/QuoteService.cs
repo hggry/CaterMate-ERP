@@ -113,34 +113,47 @@ public class QuoteService : IQuoteService
         var order = await _orderRepo.GetByIdAsync(orderId)
             ?? throw new KeyNotFoundException($"Order {orderId} not found");
         var customer = await _customerRepo.GetByIdAsync(order.CustomerId);
+
+        // The Telegram chat id (= konversation_id in n8n) is stored in the customer's
+        // Phone field for Telegram-originated orders (see OrderService.CreateFromN8nAsync).
+        var konversationId = customer?.Phone;
+        if (string.IsNullOrWhiteSpace(konversationId))
+            throw new InvalidOperationException(
+                "Für diesen Auftrag ist keine Telegram-ChatID hinterlegt – das Angebot kann nicht versendet werden.");
+
         var pdfBytes = await GetPdfBytesAsync(orderId);
 
-        // Send the quote PDF as binary (multipart/form-data) to the n8n webhook,
-        // which handles the actual delivery to the customer.
+        // Send the quote PDF as binary (multipart/form-data) to the n8n webhook, which
+        // delivers it to the customer via Telegram. The webhook reads the PDF from the
+        // "data" binary field and the chat id from the konversation_id query parameter.
         using var form = new MultipartFormDataContent();
         var pdfContent = new ByteArrayContent(pdfBytes);
         pdfContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
-        form.Add(pdfContent, "file", $"Angebot_{orderId}.pdf");
+        form.Add(pdfContent, "data", $"Angebot_{orderId}.pdf");
         form.Add(new StringContent(orderId.ToString()), "orderId");
         form.Add(new StringContent(customer?.Name ?? ""), "customerName");
-        form.Add(new StringContent(customer?.Phone ?? ""), "customerPhone");
+
+        var url = $"{_sendQuoteWebhookUrl}?konversation_id={Uri.EscapeDataString(konversationId)}";
 
         var client = _httpClientFactory.CreateClient();
-        var response = await client.PostAsync(_sendQuoteWebhookUrl, form);
+        var response = await client.PostAsync(url, form);
         response.EnsureSuccessStatusCode();
     }
 
     private static List<QuotePositionEntity> BuildPositions(IEnumerable<MenuItemEntity> menuItems, int guestCount) =>
         menuItems.Select(item =>
         {
+            // Use the per-dish portion count assigned by the AI agent; fall back to the
+            // full guest count for manually assigned items without an explicit count.
+            var quantity = item.AssignedCount ?? guestCount;
             var vatRate = item.Category == "Getränk (alkoholisch)" ? 0.20m : 0.10m;
-            var totalNet = item.SalesPricePerPerson * guestCount;
+            var totalNet = item.SalesPricePerPerson * quantity;
             var vatAmount = totalNet * vatRate;
             return new QuotePositionEntity
             {
                 MenuItemId = item.Id,
                 MenuItemName = item.Name,
-                Quantity = guestCount,
+                Quantity = quantity,
                 UnitPrice = item.SalesPricePerPerson,
                 TotalNet = totalNet,
                 VatRate = vatRate,
