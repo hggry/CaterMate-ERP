@@ -108,7 +108,7 @@ function openOrder(orderId: number): void {
         <Card>
           <template #title>Event-Kalender</template>
           <template #content>
-            <EventHeatmap :orders="activeOrders" />
+            <EventHeatmap :orders="activeOrders" :weeks="24" />
           </template>
         </Card>
 
@@ -177,12 +177,27 @@ function openOrder(orderId: number): void {
   min-height: 0;
 }
 
-/* Heatmap + upcoming events side by side (heatmap no longer full width). */
+/* Heatmap + upcoming events: same height, heatmap fills available width. */
 .dashboard__row {
   display: grid;
   grid-template-columns: 3fr 2fr;
   gap: 1rem;
-  align-items: start;
+  align-items: stretch;
+}
+
+.dashboard__row :deep(.p-card) {
+  height: 100%;
+}
+
+.dashboard__row :deep(.p-card-body) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard__row :deep(.p-card-content) {
+  flex: 1;
+  min-height: 0;
 }
 
 @media (max-width: 1100px) {

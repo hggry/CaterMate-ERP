@@ -149,16 +149,22 @@ function cellTitle(cell: Cell): string {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  height: 100%;
 }
 
 .heatmap__scroll {
   overflow-x: auto;
+  /* Let the grid stretch to fill the card width. */
+  width: 100%;
 }
 
 .heatmap__grid {
-  display: inline-flex;
+  /* Stretch to fill the scroll container width so cells scale up. */
+  display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  width: 100%;
+  min-width: max-content;
 }
 
 .heatmap__months {
@@ -207,27 +213,31 @@ function cellTitle(cell: Cell): string {
   width: 0.875rem;
   height: 0.875rem;
   border-radius: 2px;
+  /* Empty cell: use a distinct mid-grey so it's clearly visible in both modes. */
   background: var(--p-content-border-color);
 }
 
+/* Solid colour stops — visible on both light and dark backgrounds.
+   Light mode: step from muted olive → full avocado.
+   Dark mode: same stops look correct on the darker bg. */
 .heatmap__cell--l1 {
-  background: color-mix(in srgb, var(--p-primary-color) 30%, transparent);
+  background: #b8d47a;   /* very light avocado — clearly tinted, not invisible */
 }
 
 .heatmap__cell--l2 {
-  background: color-mix(in srgb, var(--p-primary-color) 50%, transparent);
+  background: #8eba3f;   /* mid avocado */
 }
 
 .heatmap__cell--l3 {
-  background: color-mix(in srgb, var(--p-primary-color) 75%, transparent);
+  background: #6b9523;   /* deeper avocado */
 }
 
 .heatmap__cell--l4 {
-  background: var(--p-primary-color);
+  background: var(--cm-avocado);   /* full brand green */
 }
 
 .heatmap__cell--past {
-  opacity: 0.45;
+  opacity: 0.5;
 }
 
 .heatmap__legend {
