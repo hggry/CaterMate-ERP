@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useRouter, type RouteLocationRaw } from 'vue-router'
+import { onMounted, watch } from 'vue'
+import { useRouter, useRoute, type RouteLocationRaw } from 'vue-router'
 import Button from 'primevue/button'
 import Badge from 'primevue/badge'
 import { useAuthStore } from '@/stores/authStore'
@@ -14,6 +14,7 @@ interface NavItem {
 }
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const suggestions = useSuggestionsStore()
 
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
 ]
 
 onMounted(() => suggestions.refresh())
+watch(() => route.fullPath, () => suggestions.refresh())
 
 function logout(): void {
   auth.logout()
