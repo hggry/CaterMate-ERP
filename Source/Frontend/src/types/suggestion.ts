@@ -1,5 +1,4 @@
-// Spec-derived (Doc/TechSpec/backend_api.md §5.9) — AI dish suggestions.
-// Backend endpoint is not implemented yet.
+// AI dish suggestions (Doc/TechSpec/backend_api.md §5.9).
 export interface DishSuggestionDto {
   menuItemId: number
   menuItemName: string

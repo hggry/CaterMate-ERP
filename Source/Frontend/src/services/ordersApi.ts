@@ -18,7 +18,7 @@ export const ordersApi = {
   remove: (id: number): Promise<void> =>
     http.delete(`/orders/${id}`).then(() => undefined),
 
-  // AI dish suggestions — backend endpoint not implemented yet (Phase 3 plan).
+  // AI dish suggestions (GET /orders/{id}/suggestions).
   getSuggestions: (id: number): Promise<DishSuggestionsResponse> =>
     http.get<DishSuggestionsResponse>(`/orders/${id}/suggestions`).then((r) => r.data),
 }

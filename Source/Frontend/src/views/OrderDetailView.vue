@@ -1,24 +1,33 @@
 <script setup lang="ts">
 import { computed, onMounted, provide, ref } from 'vue'
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
+import { useConfirm } from 'primevue/useconfirm'
 import StatusTag from '@/components/common/StatusTag.vue'
+import OrderStatusStepper from '@/components/orders/OrderStatusStepper.vue'
 import { ordersApi } from '@/services/ordersApi'
-import { useOrderStatus } from '@/composables/useOrderStatus'
+import { quotesApi } from '@/services/quotesApi'
+import { useOrderStatus, type OrderAction } from '@/composables/useOrderStatus'
+import { useToast } from '@/composables/useToast'
 import { ORDER_CONTEXT } from '@/composables/useOrderContext'
-import type { OrderDto } from '@/types/order'
+import { apiErrorMessage } from '@/types/api'
+import type { OrderDto, OrderStatus } from '@/types/order'
 
 const props = defineProps<{ id: string }>()
 const orderId = Number(props.id)
 
+const route = useRoute()
 const router = useRouter()
-const { indexOf } = useOrderStatus()
+const confirm = useConfirm()
+const toast = useToast()
+const { indexOf, primaryActionFor, tabForStatus, labelFor } = useOrderStatus()
 
 const order = ref<OrderDto | null>(null)
 const loading = ref(false)
 const loadError = ref(false)
+const busy = ref(false)
 
 async function reload(): Promise<void> {
   loading.value = true
@@ -37,6 +46,93 @@ onMounted(reload)
 provide(ORDER_CONTEXT, { order, orderId, reload })
 
 const statusIndex = computed(() => (order.value ? indexOf(order.value.status) : -1))
+
+const primaryAction = computed<OrderAction | null>(() =>
+  order.value ? primaryActionFor(order.value.status) : null,
+)
+
+// Navigate actions are hidden once the user is already on the target tab.
+const showPrimaryAction = computed(() => {
+  const action = primaryAction.value
+  if (!action) return false
+  if (action.kind === 'navigate' || action.kind === 'create-quote') return route.name !== action.targetRoute
+  return true
+})
+
+async function runStatusChange(targetStatus: OrderStatus): Promise<void> {
+  busy.value = true
+  try {
+    await ordersApi.update(orderId, { status: targetStatus })
+    await reload()
+    if (order.value) {
+      router.push({ name: tabForStatus(order.value.status), params: { id: props.id } })
+      toast.success(`Auftrag ist jetzt: ${labelFor(order.value.status)}`)
+    }
+  } catch (e) {
+    toast.error(apiErrorMessage(e))
+  } finally {
+    busy.value = false
+  }
+}
+
+async function createQuoteAndNavigate(targetRoute: string): Promise<void> {
+  busy.value = true
+  try {
+    await quotesApi.create(orderId)
+    toast.success('Angebot wurde erstellt.')
+    router.push({ name: targetRoute, params: { id: props.id } })
+  } catch (e) {
+    toast.error(apiErrorMessage(e))
+  } finally {
+    busy.value = false
+  }
+}
+
+function executeAction(action: OrderAction): void {
+  if (action.kind === 'navigate' && action.targetRoute) {
+    router.push({ name: action.targetRoute, params: { id: props.id } })
+    return
+  }
+  if (action.kind === 'create-quote' && action.targetRoute) {
+    createQuoteAndNavigate(action.targetRoute)
+    return
+  }
+  if (action.kind === 'status' && action.targetStatus) {
+    const target = action.targetStatus
+    if (action.confirm) {
+      confirm.require({
+        message: action.confirm,
+        header: 'Bestätigung',
+        icon: 'pi pi-exclamation-triangle',
+        accept: () => runStatusChange(target),
+      })
+    } else {
+      runStatusChange(target)
+    }
+  }
+}
+
+function confirmDelete(): void {
+  confirm.require({
+    message: `Auftrag #${orderId} wirklich löschen? Dies kann nicht rückgängig gemacht werden.`,
+    header: 'Auftrag löschen',
+    icon: 'pi pi-trash',
+    acceptProps: { label: 'Löschen', severity: 'danger' },
+    rejectProps: { label: 'Abbrechen', severity: 'secondary', outlined: true },
+    accept: async () => {
+      busy.value = true
+      try {
+        await ordersApi.remove(orderId)
+        toast.success('Auftrag gelöscht.')
+        router.push({ name: 'orders' })
+      } catch (e) {
+        toast.error(apiErrorMessage(e))
+      } finally {
+        busy.value = false
+      }
+    },
+  })
+}
 
 interface TabDef {
   label: string
@@ -76,9 +172,31 @@ function tabEnabled(tab: TabDef): boolean {
 
     <template v-else>
       <header class="order-detail__header">
-        <h1>Auftrag #{{ order.id }} — {{ order.customerName }}</h1>
-        <StatusTag :status="order.status" />
+        <div class="order-detail__title">
+          <h1>Auftrag #{{ order.id }} — {{ order.customerName }}</h1>
+          <StatusTag :status="order.status" />
+        </div>
+        <div class="order-detail__actions">
+          <Button
+            v-if="order.status === 'Neu'"
+            label="Löschen"
+            icon="pi pi-trash"
+            severity="danger"
+            text
+            :disabled="busy"
+            @click="confirmDelete"
+          />
+          <Button
+            v-if="showPrimaryAction && primaryAction"
+            :label="primaryAction.label"
+            :icon="primaryAction.icon"
+            :loading="busy"
+            @click="executeAction(primaryAction)"
+          />
+        </div>
       </header>
+
+      <OrderStatusStepper :status="order.status" />
 
       <nav class="order-tabs">
         <template v-for="tab in tabs" :key="tab.routeName">
@@ -117,12 +235,26 @@ function tabEnabled(tab: TabDef): boolean {
 .order-detail__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.order-detail__title {
+  display: flex;
+  align-items: center;
   gap: 1rem;
 }
 
-.order-detail__header h1 {
+.order-detail__title h1 {
   margin: 0;
   font-size: 1.5rem;
+}
+
+.order-detail__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .order-tabs {

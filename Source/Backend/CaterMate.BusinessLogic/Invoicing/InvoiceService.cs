@@ -67,7 +67,6 @@ public class InvoiceService : IInvoiceService
         }).ToList();
 
         await _invoiceRepo.CreateAsync(invoiceEntity, positions);
-        await _orderRepo.UpdateStatusAsync(orderId, "Abgerechnet");
 
         return await GetByOrderIdAsync(orderId);
     }

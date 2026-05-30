@@ -1,29 +1,46 @@
 import { ORDER_STATUSES, type OrderStatus } from '@/types/order'
 
-export type OrderActionKind = 'status' | 'navigate' | 'download'
+export type OrderActionKind = 'status' | 'navigate' | 'create-quote'
 
 export interface OrderAction {
   label: string
   kind: OrderActionKind
+  icon: string
   targetStatus?: OrderStatus
+  targetRoute?: string
+  // When set, the action requires explicit confirmation (irreversible / side effects).
+  confirm?: string
 }
 
-// Central status-transition map (see plan §B.3). Views read this map instead
-// of scattering per-status v-if checks.
-const ACTIONS: Record<OrderStatus, OrderAction[]> = {
-  Neu: [{ label: 'Als geprüft markieren', kind: 'status', targetStatus: 'Geprüft' }],
-  Geprüft: [{ label: 'Angebot erstellen', kind: 'navigate' }],
-  AngebotErstellt: [
-    { label: 'Angebot herunterladen', kind: 'download' },
-    { label: 'Auftrag bestätigen', kind: 'status', targetStatus: 'Bestätigt' },
-  ],
-  Bestätigt: [{ label: 'Einkaufsliste öffnen', kind: 'navigate' }],
-  InBeschaffung: [{ label: 'In Vorbereitung', kind: 'status', targetStatus: 'InVorbereitung' }],
-  InVorbereitung: [
-    { label: 'Als durchgeführt markieren', kind: 'status', targetStatus: 'Durchgeführt' },
-  ],
-  Durchgeführt: [{ label: 'Rechnung erstellen', kind: 'navigate' }],
-  Abgerechnet: [{ label: 'Rechnung herunterladen', kind: 'download' }],
+// Single primary "next step" per status, driving the persistent action button
+// in OrderDetailView. Terminal status has no follow-up action.
+const ACTIONS: Record<OrderStatus, OrderAction | null> = {
+  Neu: { label: 'Als geprüft markieren', kind: 'status', targetStatus: 'Geprüft', icon: 'pi pi-check' },
+  Geprüft: { label: 'Angebot erstellen', kind: 'create-quote', targetRoute: 'order-quote', icon: 'pi pi-file' },
+  AngebotErstellt: {
+    label: 'Auftrag bestätigen',
+    kind: 'status',
+    targetStatus: 'Bestätigt',
+    icon: 'pi pi-check',
+    confirm: 'Der Auftrag wird bestätigt und die Beschaffung angestoßen (Einkaufsliste wird erstellt). Fortfahren?',
+  },
+  Bestätigt: { label: 'Einkaufsliste öffnen', kind: 'navigate', targetRoute: 'order-purchase-list', icon: 'pi pi-shopping-cart' },
+  InBeschaffung: { label: 'In Vorbereitung', kind: 'status', targetStatus: 'InVorbereitung', icon: 'pi pi-arrow-right' },
+  InVorbereitung: { label: 'Als durchgeführt markieren', kind: 'status', targetStatus: 'Durchgeführt', icon: 'pi pi-check' },
+  Durchgeführt: { label: 'Rechnung erstellen', kind: 'navigate', targetRoute: 'order-invoice', icon: 'pi pi-file' },
+  Abgerechnet: null,
+}
+
+// Tab a status's work happens in — used to auto-navigate after a status change.
+const TAB_FOR_STATUS: Record<OrderStatus, string> = {
+  Neu: 'order-detail',
+  Geprüft: 'order-detail',
+  AngebotErstellt: 'order-quote',
+  Bestätigt: 'order-purchase-list',
+  InBeschaffung: 'order-purchase-list',
+  InVorbereitung: 'order-purchase-list',
+  Durchgeführt: 'order-invoice',
+  Abgerechnet: 'order-invoice',
 }
 
 const LABELS: Record<OrderStatus, string> = {
@@ -51,8 +68,12 @@ const SEVERITIES: Record<OrderStatus, TagSeverity> = {
 }
 
 export function useOrderStatus() {
-  function actionsFor(status: OrderStatus): OrderAction[] {
+  function primaryActionFor(status: OrderStatus): OrderAction | null {
     return ACTIONS[status]
+  }
+
+  function tabForStatus(status: OrderStatus): string {
+    return TAB_FOR_STATUS[status]
   }
 
   function labelFor(status: OrderStatus): string {
@@ -67,5 +88,5 @@ export function useOrderStatus() {
     return ORDER_STATUSES.indexOf(status)
   }
 
-  return { actionsFor, labelFor, severityFor, indexOf }
+  return { primaryActionFor, tabForStatus, labelFor, severityFor, indexOf }
 }

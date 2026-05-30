@@ -373,6 +373,8 @@ Wird automatisch erstellt, wenn ein Auftrag auf `Bestätigt` gesetzt wird.
 | GET | `/api/orders/{orderId}/invoice` | Rechnung abrufen | Ja |
 | GET | `/api/orders/{orderId}/invoice/pdf` | Rechnung als PDF herunterladen | Ja |
 
+> **Hinweis:** `POST /invoice` löst keinen automatischen Statusübergang aus. Der Auftrag verbleibt nach der Rechnungserstellung im Status `Durchgeführt`. Der Übergang auf `Abgerechnet` erfolgt explizit durch den User über `PATCH /api/orders/{id}` mit `{ "status": "Abgerechnet" }`, nachdem der Zahlungseingang bestätigt wurde.
+
 **InvoiceDto:**
 ```json
 {

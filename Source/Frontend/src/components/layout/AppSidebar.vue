@@ -38,7 +38,10 @@ function logout(): void {
 
 <template>
   <aside class="app-sidebar">
-    <div class="app-sidebar__brand">CaterMate ERP</div>
+    <div class="app-sidebar__brand">
+      <img src="@/assets/logo.svg" alt="CaterMate Logo" class="app-sidebar__logo" />
+      CaterMate ERP
+    </div>
 
     <nav class="app-sidebar__nav">
       <RouterLink
@@ -89,11 +92,22 @@ function logout(): void {
 }
 
 .app-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
   padding: 0.5rem;
   margin-bottom: 1rem;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--p-primary-color);
+}
+
+.app-sidebar__logo {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .app-sidebar__nav {

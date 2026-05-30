@@ -4,8 +4,10 @@ import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
+import { useConfirm } from 'primevue/useconfirm'
 import PositionsTable from '@/components/common/PositionsTable.vue'
 import { invoicesApi } from '@/services/invoicesApi'
+import { ordersApi } from '@/services/ordersApi'
 import { useToast } from '@/composables/useToast'
 import { useFormat } from '@/composables/useFormat'
 import { useOrderContext } from '@/composables/useOrderContext'
@@ -14,6 +16,7 @@ import type { InvoiceDto } from '@/types/invoice'
 
 const { order, orderId, reload } = useOrderContext()
 const toast = useToast()
+const confirm = useConfirm()
 const { formatCurrency, formatDate } = useFormat()
 
 const invoice = ref<InvoiceDto | null>(null)
@@ -22,6 +25,7 @@ const loadError = ref(false)
 const busy = ref(false)
 
 const canCreate = computed(() => order.value?.status === 'Durchgeführt' && !invoice.value)
+const canConfirmPayment = computed(() => !!invoice.value && order.value?.status === 'Durchgeführt')
 
 async function loadInvoice(): Promise<void> {
   loading.value = true
@@ -41,6 +45,16 @@ async function loadInvoice(): Promise<void> {
 
 onMounted(loadInvoice)
 
+function confirmCreateInvoice(): void {
+  confirm.require({
+    message:
+      'Die Rechnung wird mit fortlaufender Rechnungsnummer erstellt. Fortfahren?',
+    header: 'Rechnung erstellen',
+    icon: 'pi pi-exclamation-triangle',
+    accept: createInvoice,
+  })
+}
+
 async function createInvoice(): Promise<void> {
   busy.value = true
   try {
@@ -52,6 +66,26 @@ async function createInvoice(): Promise<void> {
   } finally {
     busy.value = false
   }
+}
+
+async function confirmPayment(): Promise<void> {
+  confirm.require({
+    message: 'Zahlungseingang bestätigen? Der Auftrag wird damit als vollständig abgerechnet markiert.',
+    header: 'Zahlungseingang bestätigen',
+    icon: 'pi pi-check-circle',
+    accept: async () => {
+      busy.value = true
+      try {
+        await ordersApi.update(orderId, { status: 'Abgerechnet' })
+        await reload()
+        toast.success('Zahlungseingang bestätigt. Auftrag abgeschlossen.')
+      } catch (e) {
+        toast.error(apiErrorMessage(e))
+      } finally {
+        busy.value = false
+      }
+    },
+  })
 }
 
 async function downloadPdf(): Promise<void> {
@@ -83,7 +117,7 @@ async function downloadPdf(): Promise<void> {
         label="Rechnung erstellen"
         icon="pi pi-file"
         :loading="busy"
-        @click="createInvoice"
+        @click="confirmCreateInvoice"
       />
     </template>
 
@@ -133,6 +167,13 @@ async function downloadPdf(): Promise<void> {
           severity="secondary"
           outlined
           @click="downloadPdf"
+        />
+        <Button
+          v-if="canConfirmPayment"
+          label="Zahlungseingang bestätigen"
+          icon="pi pi-check-circle"
+          :loading="busy"
+          @click="confirmPayment"
         />
       </div>
     </template>
