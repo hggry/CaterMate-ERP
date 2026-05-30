@@ -72,6 +72,11 @@ const chartOptions = computed(() => {
 
 <style scoped>
 .monthly-bar-chart {
-  height: clamp(14rem, 28vh, 20rem);
+  height: 100%;
+  min-height: 12rem;
+}
+
+.monthly-bar-chart :deep(.p-chart) {
+  height: 100%;
 }
 </style>

@@ -37,7 +37,7 @@ const monthLabels = monthWindow.map((b) => b.label)
 const revenueValues = computed(() =>
   mapToWindow(monthWindow, data.value?.revenueByMonth ?? [], 'totalGross'),
 )
-const guestValues = computed(() =>
+const personValues = computed(() =>
   mapToWindow(monthWindow, data.value?.guestsByMonth ?? [], 'guests'),
 )
 
@@ -67,15 +67,9 @@ function openOrder(orderId: number): void {
 
       <StatusKpis :orders-by-status="data?.ordersByStatus ?? {}" @select="openOrders" />
 
-      <Card>
-        <template #title>Event-Kalender</template>
-        <template #content>
-          <EventHeatmap :orders="orders ?? []" />
-        </template>
-      </Card>
-
-      <div class="dashboard__grid">
-        <Card>
+      <!-- Equal-height row: both charts and the pipeline share the same height. -->
+      <div class="dashboard__charts">
+        <Card class="dashboard__panel">
           <template #title>Umsatz pro Monat</template>
           <template #content>
             <MonthlyBarChart
@@ -87,46 +81,55 @@ function openOrder(orderId: number): void {
           </template>
         </Card>
 
-        <Card>
-          <template #title>Gäste pro Monat</template>
+        <Card class="dashboard__panel">
+          <template #title>Personen pro Monat</template>
           <template #content>
             <MonthlyBarChart
               :labels="monthLabels"
-              :values="guestValues"
+              :values="personValues"
               label="Personen"
-              color="#3b82f6"
+              color="#20a090"
             />
           </template>
         </Card>
 
-        <Card>
-          <template #title>Pipeline</template>
+        <Card class="dashboard__panel">
+          <template #title>Pipeline (offen)</template>
           <template #content>
             <PipelineFunnel :orders-by-status="data?.ordersByStatus ?? {}" @select="openOrders" />
+          </template>
+        </Card>
+      </div>
+
+      <div class="dashboard__row">
+        <Card>
+          <template #title>Event-Kalender</template>
+          <template #content>
+            <EventHeatmap :orders="orders ?? []" />
           </template>
         </Card>
 
         <Card>
           <template #title>Anstehende Events</template>
           <template #content>
-            <UpcomingEvents :orders="orders ?? []" @select="openOrder" />
-          </template>
-        </Card>
-
-        <Card class="dashboard__wide">
-          <template #title>Top-Kunden</template>
-          <template #content>
-            <DataTable :value="data?.topCustomers ?? []" data-key="customerName">
-              <template #empty>Keine Daten vorhanden.</template>
-              <Column field="customerName" header="Kunde" />
-              <Column field="orderCount" header="Aufträge" style="width: 8rem" />
-              <Column header="Umsatz">
-                <template #body="{ data: row }">{{ formatCurrency(row.totalRevenue) }}</template>
-              </Column>
-            </DataTable>
+            <UpcomingEvents :orders="orders ?? []" :limit="4" @select="openOrder" />
           </template>
         </Card>
       </div>
+
+      <Card>
+        <template #title>Top-Kunden</template>
+        <template #content>
+          <DataTable :value="data?.topCustomers ?? []" data-key="customerName">
+            <template #empty>Keine Daten vorhanden.</template>
+            <Column field="customerName" header="Kunde" />
+            <Column field="orderCount" header="Aufträge" style="width: 8rem" />
+            <Column header="Umsatz">
+              <template #body="{ data: row }">{{ formatCurrency(row.totalRevenue) }}</template>
+            </Column>
+          </DataTable>
+        </template>
+      </Card>
     </template>
   </div>
 </template>
@@ -148,20 +151,46 @@ function openOrder(orderId: number): void {
   padding: 3rem;
 }
 
-.dashboard__grid {
+/* Three equal-height panels: revenue chart, persons chart, pipeline. */
+.dashboard__charts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  grid-auto-rows: 22rem;
+}
+
+.dashboard__panel {
+  height: 100%;
+}
+
+.dashboard__panel :deep(.p-card-body) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard__panel :deep(.p-card-content) {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Heatmap + upcoming events side by side (heatmap no longer full width). */
+.dashboard__row {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
   gap: 1rem;
   align-items: start;
 }
 
-/* Span the full row when the grid has two columns. */
-.dashboard__wide {
-  grid-column: 1 / -1;
+@media (max-width: 1100px) {
+  .dashboard__charts {
+    grid-template-columns: 1fr;
+    grid-auto-rows: 20rem;
+  }
 }
 
-@media (max-width: 640px) {
-  .dashboard__grid {
+@media (max-width: 900px) {
+  .dashboard__row {
     grid-template-columns: 1fr;
   }
 }

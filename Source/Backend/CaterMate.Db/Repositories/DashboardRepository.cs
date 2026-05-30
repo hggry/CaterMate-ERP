@@ -24,6 +24,7 @@ public class DashboardRepository : IDashboardRepository
     private const string GuestsByMonth = @"
         SELECT DATE_FORMAT(EventDate, '%Y-%m') AS Month, SUM(GuestCount) AS Guests
         FROM Orders
+        WHERE Status IN ('Bestätigt', 'InBeschaffung', 'InVorbereitung', 'Durchgeführt', 'Abgerechnet')
         GROUP BY Month
         ORDER BY Month DESC
         LIMIT 14";

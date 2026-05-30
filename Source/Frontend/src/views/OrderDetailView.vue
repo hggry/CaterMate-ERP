@@ -204,7 +204,7 @@ function tabEnabled(tab: TabDef): boolean {
             v-if="tabEnabled(tab)"
             :to="{ name: tab.routeName, params: { id: props.id } }"
             class="order-tabs__tab"
-            active-class="order-tabs__tab--active"
+            exact-active-class="order-tabs__tab--active"
           >
             {{ tab.label }}
           </RouterLink>

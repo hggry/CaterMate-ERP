@@ -52,12 +52,16 @@ const upcoming = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.875rem;
-  padding: 0.5rem 0;
+  padding: 0.4rem 0;
   border: none;
   border-bottom: 1px solid var(--p-content-border-color);
   background: none;
   cursor: pointer;
   text-align: left;
+}
+
+.upcoming__row:hover .upcoming__customer {
+  color: var(--p-primary-color);
 }
 
 .upcoming__row:last-child {

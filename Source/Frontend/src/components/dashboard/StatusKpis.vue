@@ -35,8 +35,21 @@ const kpis = computed(() =>
 <style scoped>
 .status-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  grid-template-columns: repeat(8, 1fr);
   gap: 0.75rem;
+}
+
+/* Clean breakpoints instead of ragged auto-fill wrapping: 8 → 4×2 → 2×4. */
+@media (max-width: 1200px) {
+  .status-kpis {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .status-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .status-kpis__kpi {

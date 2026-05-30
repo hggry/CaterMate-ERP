@@ -72,14 +72,24 @@ const columns = computed<Cell[][]>(() => {
   return cols
 })
 
-// Month label above a week column when that week introduces a new month.
-const monthLabels = computed(() =>
-  columns.value.map((col, i) => {
-    const firstOfWeek = col[0].date
+// Month label above the week that introduces a new month, but only if it is far
+// enough from the previous label to avoid overlapping text (e.g. "MaiJun").
+const MIN_LABEL_GAP = 3
+const monthLabels = computed(() => {
+  const labels: string[] = []
+  let lastLabeled = -MIN_LABEL_GAP
+  columns.value.forEach((col, i) => {
+    const month = col[0].date.getMonth()
     const prevMonth = i > 0 ? columns.value[i - 1][0].date.getMonth() : -1
-    return firstOfWeek.getMonth() !== prevMonth ? monthFormatter.format(firstOfWeek) : ''
-  }),
-)
+    if (month !== prevMonth && i - lastLabeled >= MIN_LABEL_GAP) {
+      labels.push(monthFormatter.format(col[0].date))
+      lastLabeled = i
+    } else {
+      labels.push('')
+    }
+  })
+  return labels
+})
 
 function cellTitle(cell: Cell): string {
   const label = dateFormatter.format(cell.date)

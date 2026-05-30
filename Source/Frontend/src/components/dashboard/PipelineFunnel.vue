@@ -8,10 +8,13 @@ const emit = defineEmits<{ select: [status: OrderStatus] }>()
 
 const { labelFor } = useOrderStatus()
 
+// The pipeline tracks open work, so the terminal "Abgerechnet" stage is excluded.
+const OPEN_STAGES = ORDER_STATUSES.filter((status) => status !== 'Abgerechnet')
+
 const rows = computed(() => {
-  const counts = ORDER_STATUSES.map((status) => props.ordersByStatus[status] ?? 0)
+  const counts = OPEN_STAGES.map((status) => props.ordersByStatus[status] ?? 0)
   const max = Math.max(1, ...counts)
-  return ORDER_STATUSES.map((status, i) => ({
+  return OPEN_STAGES.map((status, i) => ({
     status,
     label: labelFor(status),
     count: counts[i],
@@ -43,7 +46,9 @@ const rows = computed(() => {
 .funnel {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 0.375rem;
+  height: 100%;
 }
 
 .funnel__row {
