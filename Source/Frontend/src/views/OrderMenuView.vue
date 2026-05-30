@@ -31,15 +31,13 @@ const search = ref('')
 const categoryFilter = ref<string | null>(null)
 const hideUnsuitable = ref(false)
 
-// Editing is locked once the offer is released.
 const locked = computed(() =>
   order.value ? indexOf(order.value.status) >= indexOf('AngebotErstellt') : false,
 )
 
 const guestCount = computed(() => order.value?.guestCount ?? 0)
 
-// Local map of menuItemId → count (null = use guestCount).
-// Initialised from the order's assignedMenuItems (which carry AI-provided counts).
+// Per-item counts: null = use full guestCount.
 const localCounts = ref<Map<number, number | null>>(new Map())
 
 watch(
@@ -47,9 +45,7 @@ watch(
   (items) => {
     if (!items) return
     const next = new Map<number, number | null>()
-    for (const item of items) {
-      next.set(item.id, item.count ?? null)
-    }
+    for (const item of items) next.set(item.id, item.count ?? null)
     localCounts.value = next
   },
   { immediate: true },
@@ -62,7 +58,7 @@ function effectiveCount(menuItemId: number): number {
   return c != null && c > 0 ? c : guestCount.value
 }
 
-// Course ordering
+// ── Course ordering ────────────────────────────────────────────────────────
 const COURSE_ORDER = ['Vorspeise', 'Hauptgang', 'Dessert', 'Beilage', 'Getränk', 'Getränk (alkoholisch)']
 function courseRank(category: string): number {
   const i = COURSE_ORDER.indexOf(category)
@@ -74,7 +70,7 @@ const categoryOptions = computed(() => {
   return cats.sort((a, b) => courseRank(a) - courseRank(b)).map((c) => ({ label: c, value: c }))
 })
 
-// Allergen check
+// ── Suitability ────────────────────────────────────────────────────────────
 const orderAllergens = computed(() =>
   (order.value?.allergies ?? '')
     .split(/[,;]+|\s+/)
@@ -103,19 +99,99 @@ function unsuitableReason(item: MenuItemDto): string {
   return r.join(' · ')
 }
 
-const filteredCatalog = computed(() => {
+// ── Filtering ──────────────────────────────────────────────────────────────
+const filteredItems = computed(() => {
   const q = search.value.toLowerCase().trim()
   return (catalog.value ?? []).filter((item) => {
     if (categoryFilter.value && item.category !== categoryFilter.value) return false
     if (hideUnsuitable.value && isUnsuitable(item)) return false
-    if (!q) return true
-    return item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q)
+    if (q && !item.name.toLowerCase().includes(q) && !item.category.toLowerCase().includes(q)) return false
+    return true
   })
 })
 
+// ── Per-section collapsible state ──────────────────────────────────────────
+// Open by default if the section contains at least one selected item.
+const openSections = ref<string[]>([])
+
+watch(
+  [catalog, () => order.value?.assignedMenuItems],
+  () => {
+    if (!catalog.value) return
+    const selectedCategories = new Set(
+      catalog.value.filter((m) => assignedIds.value.includes(m.id)).map((m) => m.category),
+    )
+    openSections.value = [...new Set([...openSections.value, ...selectedCategories])]
+  },
+  { immediate: true },
+)
+
+function isSectionOpen(cat: string): boolean {
+  return openSections.value.includes(cat)
+}
+
+function toggleSection(cat: string): void {
+  if (isSectionOpen(cat)) {
+    openSections.value = openSections.value.filter((c) => c !== cat)
+  } else {
+    openSections.value = [...openSections.value, cat]
+  }
+}
+
+// ── Per-section sorting ────────────────────────────────────────────────────
+type SortKey = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'
+const sectionSorts = ref<Record<string, SortKey>>({})
+
+function getSort(cat: string): SortKey {
+  return sectionSorts.value[cat] ?? 'name-asc'
+}
+
+function setSort(cat: string, key: SortKey): void {
+  sectionSorts.value = { ...sectionSorts.value, [cat]: key }
+}
+
+function cycleName(cat: string): void {
+  setSort(cat, getSort(cat) === 'name-asc' ? 'name-desc' : 'name-asc')
+}
+
+function cyclePrice(cat: string): void {
+  setSort(cat, getSort(cat) === 'price-asc' ? 'price-desc' : 'price-asc')
+}
+
+function sortIcon(cat: string, type: 'name' | 'price'): string {
+  const s = getSort(cat)
+  if (type === 'name') {
+    if (s === 'name-asc') return 'pi pi-sort-alpha-down'
+    if (s === 'name-desc') return 'pi pi-sort-alpha-up-alt'
+    return 'pi pi-sort-alpha-down'
+  }
+  if (s === 'price-asc') return 'pi pi-sort-amount-down-alt'
+  if (s === 'price-desc') return 'pi pi-sort-amount-up-alt'
+  return 'pi pi-sort-amount-down-alt'
+}
+
+function isActiveSortType(cat: string, type: 'name' | 'price'): boolean {
+  const s = getSort(cat)
+  return type === 'name' ? s.startsWith('name') : s.startsWith('price')
+}
+
+function sortedItems(items: MenuItemDto[], cat: string): MenuItemDto[] {
+  const s = getSort(cat)
+  return [...items].sort((a, b) => {
+    switch (s) {
+      case 'name-asc':   return a.name.localeCompare(b.name, 'de')
+      case 'name-desc':  return b.name.localeCompare(a.name, 'de')
+      case 'price-asc':  return a.salesPricePerPerson - b.salesPricePerPerson
+      case 'price-desc': return b.salesPricePerPerson - a.salesPricePerPerson
+      default: return 0
+    }
+  })
+}
+
+// ── Grouped catalog (for rendering) ───────────────────────────────────────
 const groupedCatalog = computed(() => {
   const groups = new Map<string, MenuItemDto[]>()
-  for (const item of filteredCatalog.value) {
+  for (const item of filteredItems.value) {
     const list = groups.get(item.category) ?? []
     list.push(item)
     groups.set(item.category, list)
@@ -125,6 +201,11 @@ const groupedCatalog = computed(() => {
     .map(([category, items]) => ({ category, items }))
 })
 
+function selectedCountInSection(cat: string): number {
+  return (catalog.value ?? []).filter((m) => m.category === cat && assignedIds.value.includes(m.id)).length
+}
+
+// ── Menu card ──────────────────────────────────────────────────────────────
 const selectedItems = computed(() =>
   (catalog.value ?? []).filter((m) => assignedIds.value.includes(m.id)),
 )
@@ -141,7 +222,6 @@ const groupedSelection = computed(() => {
     .map(([category, items]) => ({ category, items }))
 })
 
-// Live price using per-item effective count
 const netValue = computed(() =>
   selectedItems.value.reduce((sum, m) => sum + m.salesPricePerPerson * effectiveCount(m.id), 0),
 )
@@ -154,15 +234,15 @@ const contributionMargin = computed(() =>
 const budget = computed(() => order.value?.budget ?? null)
 const budgetDelta = computed(() => (budget.value != null ? budget.value - netValue.value : null))
 
-// Build the payload with current local counts
-function buildCountPayload(ids: number[]): MenuItemWithCount[] {
+// ── Persistence ────────────────────────────────────────────────────────────
+function buildPayload(ids: number[]): MenuItemWithCount[] {
   return ids.map((id) => ({ menuItemId: id, count: localCounts.value.get(id) ?? null }))
 }
 
 async function persist(ids: number[]): Promise<void> {
   menuBusy.value = true
   try {
-    await ordersApi.update(orderId, { assignedMenuItemsWithCounts: buildCountPayload(ids) })
+    await ordersApi.update(orderId, { assignedMenuItemsWithCounts: buildPayload(ids) })
     await reload()
   } catch (e) {
     toast.error(apiErrorMessage(e))
@@ -173,21 +253,19 @@ async function persist(ids: number[]): Promise<void> {
 
 function toggle(id: number): void {
   if (locked.value || menuBusy.value) return
-  const current = assignedIds.value
-  if (current.includes(id)) {
+  const cur = assignedIds.value
+  if (cur.includes(id)) {
     localCounts.value.delete(id)
-    void persist(current.filter((x) => x !== id))
+    void persist(cur.filter((x) => x !== id))
   } else {
-    // New items default to null → guestCount will be used
     localCounts.value.set(id, null)
-    void persist([...current, id])
+    void persist([...cur, id])
   }
 }
 
-async function updateCount(id: number, rawValue: number | null): Promise<void> {
+async function updateCount(id: number, raw: number | null): Promise<void> {
   if (locked.value || menuBusy.value) return
-  // null or 0 means "use full guest count"
-  localCounts.value.set(id, rawValue && rawValue > 0 ? rawValue : null)
+  localCounts.value.set(id, raw && raw > 0 ? raw : null)
   await persist(assignedIds.value)
 }
 
@@ -205,8 +283,9 @@ watch(categoryOptions, () => {
     </Message>
 
     <div class="menu-view__grid">
-      <!-- Catalog -->
+      <!-- ── Catalog ── -->
       <section class="menu-view__catalog">
+        <!-- Global filters -->
         <div class="menu-view__filters">
           <InputText v-model="search" placeholder="Gericht suchen…" fluid />
           <Select
@@ -232,42 +311,82 @@ watch(categoryOptions, () => {
         <Message v-else-if="error" severity="error" :closable="false">
           Menüartikel konnten nicht geladen werden.
         </Message>
-        <div v-else class="menu-view__catalog-list">
+
+        <div v-else class="menu-view__sections">
           <p v-if="groupedCatalog.length === 0" class="menu-view__empty">Kein Treffer.</p>
-          <template v-for="group in groupedCatalog" :key="group.category">
-            <div class="menu-view__group-title">{{ group.category }}</div>
-            <button
-              v-for="item in group.items"
-              :key="item.id"
-              type="button"
-              class="menu-view__item"
-              :class="{ 'menu-view__item--selected': assignedIds.includes(item.id) }"
-              :disabled="locked"
-              @click="toggle(item.id)"
-            >
-              <i
-                class="menu-view__check"
-                :class="assignedIds.includes(item.id) ? 'pi pi-check-circle' : 'pi pi-circle'"
-              />
-              <span class="menu-view__item-main">
+
+          <div
+            v-for="group in groupedCatalog"
+            :key="group.category"
+            class="menu-view__section"
+          >
+            <!-- Section header — always visible -->
+            <div class="menu-view__section-head" @click="toggleSection(group.category)">
+              <span class="menu-view__section-toggle">
+                <i :class="isSectionOpen(group.category) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" />
+              </span>
+              <span class="menu-view__section-name">{{ group.category }}</span>
+              <span class="menu-view__section-meta">
+                {{ selectedCountInSection(group.category) }}/{{ group.items.length }}
+              </span>
+
+              <!-- Sort controls inside header (stop propagation so they don't toggle the section) -->
+              <span class="menu-view__sort-btns" @click.stop>
+                <button
+                  class="menu-view__sort-btn"
+                  :class="{ 'menu-view__sort-btn--active': isActiveSortType(group.category, 'name') }"
+                  :title="getSort(group.category).startsWith('name') ? 'Name umkehren' : 'Nach Name sortieren'"
+                  @click="cycleName(group.category)"
+                >
+                  <i :class="sortIcon(group.category, 'name')" />
+                  <span>Name</span>
+                </button>
+                <button
+                  class="menu-view__sort-btn"
+                  :class="{ 'menu-view__sort-btn--active': isActiveSortType(group.category, 'price') }"
+                  :title="getSort(group.category).startsWith('price') ? 'Preis umkehren' : 'Nach Preis sortieren'"
+                  @click="cyclePrice(group.category)"
+                >
+                  <i :class="sortIcon(group.category, 'price')" />
+                  <span>Preis</span>
+                </button>
+              </span>
+            </div>
+
+            <!-- Section body — collapsible -->
+            <div v-if="isSectionOpen(group.category)" class="menu-view__section-body">
+              <button
+                v-for="item in sortedItems(group.items, group.category)"
+                :key="item.id"
+                type="button"
+                class="menu-view__item"
+                :class="{ 'menu-view__item--selected': assignedIds.includes(item.id) }"
+                :disabled="locked"
+                @click="toggle(item.id)"
+              >
+                <i
+                  class="menu-view__check"
+                  :class="assignedIds.includes(item.id) ? 'pi pi-check-circle' : 'pi pi-circle'"
+                />
                 <span class="menu-view__item-name">{{ item.name }}</span>
                 <span
                   v-if="isUnsuitable(item)"
                   class="menu-view__badge menu-view__badge--unsuitable"
                   :title="`Ungeeignet: ${unsuitableReason(item)}`"
+                  @click.stop
                 >
                   <i class="pi pi-exclamation-triangle" /> Ungeeignet
                 </span>
-              </span>
-              <span class="menu-view__item-price">
-                {{ formatCurrency(item.salesPricePerPerson) }}
-              </span>
-            </button>
-          </template>
+                <span class="menu-view__item-price">
+                  {{ formatCurrency(item.salesPricePerPerson) }}
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- Live menu card -->
+      <!-- ── Live menu card ── -->
       <aside class="menu-view__card">
         <div class="menu-view__card-head">
           <h3>Menükarte</h3>
@@ -276,27 +395,25 @@ watch(categoryOptions, () => {
 
         <div class="menu-view__menu">
           <p v-if="selectedItems.length === 0" class="menu-view__empty">
-            Wähle links Gerichte aus — sie erscheinen hier.
+            Wähle links Gerichte aus.
           </p>
           <template v-for="group in groupedSelection" :key="group.category">
             <div class="menu-view__menu-course">{{ group.category }}</div>
             <div v-for="item in group.items" :key="item.id" class="menu-view__menu-item">
               <span class="menu-view__menu-name">{{ item.name }}</span>
-              <span class="menu-view__menu-count-wrap">
-                <InputNumber
-                  v-if="!locked"
-                  :model-value="localCounts.get(item.id) ?? guestCount"
-                  :min="1"
-                  :max="9999"
-                  :use-grouping="false"
-                  class="menu-view__count-input"
-                  :disabled="menuBusy"
-                  @update:model-value="(v) => updateCount(item.id, v)"
-                />
-                <span v-else class="menu-view__count-readonly">
-                  {{ localCounts.get(item.id) ?? guestCount }}
-                </span>
-                <span class="menu-view__count-label">Pers.</span>
+              <InputNumber
+                v-if="!locked"
+                :model-value="localCounts.get(item.id) ?? guestCount"
+                :min="1"
+                :max="9999"
+                :use-grouping="false"
+                style="width: 3.25rem"
+                :input-style="{ width: '3.25rem', padding: '0.2rem 0.3rem', fontSize: '0.8125rem', textAlign: 'right' }"
+                :disabled="menuBusy"
+                @update:model-value="(v) => updateCount(item.id, v)"
+              />
+              <span v-else class="menu-view__count-readonly">
+                {{ localCounts.get(item.id) ?? guestCount }}
               </span>
               <span class="menu-view__menu-price">
                 {{ formatCurrency(item.salesPricePerPerson * effectiveCount(item.id)) }}
@@ -317,7 +434,7 @@ watch(categoryOptions, () => {
 
         <div class="menu-view__calc">
           <div class="menu-view__calc-row menu-view__calc-row--hint">
-            <span>Basis Personenzahl</span>
+            <span>Basis</span>
             <span>{{ guestCount }} Pers.</span>
           </div>
           <div class="menu-view__calc-row">
@@ -356,7 +473,7 @@ watch(categoryOptions, () => {
 
 .menu-view__grid {
   display: grid;
-  grid-template-columns: 1fr 24rem;
+  grid-template-columns: 1fr 22rem;
   gap: 1.5rem;
   align-items: start;
 }
@@ -367,10 +484,10 @@ watch(categoryOptions, () => {
   }
 }
 
-/* Catalog */
+/* ── Global filters ─────────────────────────────────────────────────────── */
 .menu-view__filters {
   display: grid;
-  grid-template-columns: 1fr 12rem auto;
+  grid-template-columns: 1fr 11rem auto;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
 }
@@ -392,33 +509,105 @@ watch(categoryOptions, () => {
   margin: 0.5rem 0;
 }
 
-.menu-view__catalog-list {
+/* ── Sections ───────────────────────────────────────────────────────────── */
+.menu-view__sections {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 0.25rem;
 }
 
-.menu-view__group-title {
+.menu-view__section {
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius, 6px);
+  overflow: hidden;
+}
+
+.menu-view__section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--p-content-hover-background);
+  cursor: pointer;
+  user-select: none;
+}
+
+.menu-view__section-head:hover {
+  background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+}
+
+.menu-view__section-toggle {
+  color: var(--p-text-muted-color);
   font-size: 0.75rem;
+  flex-shrink: 0;
+  width: 1rem;
+}
+
+.menu-view__section-name {
+  font-size: 0.8125rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--p-text-muted-color);
-  padding: 0.75rem 0 0.25rem;
+  flex: 1;
+}
+
+.menu-view__section-meta {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+  margin-right: 0.25rem;
+}
+
+/* Sort buttons */
+.menu-view__sort-btns {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.menu-view__sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.6875rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 4px;
+  background: var(--p-content-background);
+  color: var(--p-text-muted-color);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.menu-view__sort-btn:hover {
+  border-color: var(--p-primary-color);
+  color: var(--p-primary-color);
+}
+
+.menu-view__sort-btn--active {
+  border-color: var(--p-primary-color);
+  color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 10%, transparent);
+}
+
+/* Section body items */
+.menu-view__section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.25rem 0;
 }
 
 .menu-view__item {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1.5rem 1fr auto auto;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.625rem;
+  gap: 0.625rem;
+  padding: 0.4rem 0.75rem;
   border: none;
-  border-radius: var(--p-border-radius, 6px);
   background: none;
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s;
+  transition: background 0.12s;
 }
 
 .menu-view__item:hover:not(:disabled) {
@@ -427,28 +616,24 @@ watch(categoryOptions, () => {
 
 .menu-view__item:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .menu-view__item--selected {
-  background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+  background: color-mix(in srgb, var(--p-primary-color) 10%, transparent);
 }
 
 .menu-view__check {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--p-primary-color);
 }
 
-.menu-view__item-main {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
 .menu-view__item-name {
+  font-size: 0.9rem;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menu-view__badge {
@@ -459,6 +644,7 @@ watch(categoryOptions, () => {
   font-weight: 600;
   padding: 0.05rem 0.35rem;
   border-radius: 999px;
+  white-space: nowrap;
 }
 
 .menu-view__badge--unsuitable {
@@ -469,10 +655,11 @@ watch(categoryOptions, () => {
 .menu-view__item-price {
   font-variant-numeric: tabular-nums;
   color: var(--p-text-muted-color);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
 }
 
-/* Menu card */
+/* ── Menu card ──────────────────────────────────────────────────────────── */
 .menu-view__card {
   position: sticky;
   top: 1rem;
@@ -504,7 +691,7 @@ watch(categoryOptions, () => {
 .menu-view__menu {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.125rem;
   margin-bottom: 1rem;
 }
 
@@ -519,11 +706,11 @@ watch(categoryOptions, () => {
 
 .menu-view__menu-item {
   display: grid;
-  /* name | count-widget | total-price | remove */
+  /* name | count-input | subtotal | remove */
   grid-template-columns: 1fr auto auto auto;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0;
+  gap: 0.375rem;
+  padding: 0.2rem 0;
 }
 
 .menu-view__menu-name {
@@ -533,42 +720,21 @@ watch(categoryOptions, () => {
   font-size: 0.875rem;
 }
 
-.menu-view__menu-count-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.menu-view__count-input {
-  width: 4.5rem;
-}
-
-/* Style the inner input of PrimeVue InputNumber to be compact */
-.menu-view__count-input :deep(.p-inputnumber-input) {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-  text-align: right;
-}
-
 .menu-view__count-readonly {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   min-width: 2rem;
   text-align: right;
-}
-
-.menu-view__count-label {
-  font-size: 0.75rem;
   color: var(--p-text-muted-color);
-  white-space: nowrap;
 }
 
 .menu-view__menu-price {
   font-variant-numeric: tabular-nums;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   text-align: right;
   min-width: 4rem;
 }
 
+/* ── Calculation ─────────────────────────────────────────────────────────── */
 .menu-view__calc {
   border-top: 1px solid var(--p-content-border-color);
   padding-top: 0.75rem;
@@ -584,7 +750,7 @@ watch(categoryOptions, () => {
 .menu-view__calc-row--hint {
   font-size: 0.8125rem;
   color: var(--p-text-muted-color);
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.375rem;
 }
 
 .menu-view__calc-row--delta {
