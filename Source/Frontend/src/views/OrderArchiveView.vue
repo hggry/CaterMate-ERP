@@ -54,9 +54,10 @@ function openOrder(orderId: number): void {
       />
     </header>
 
-    <OrderFilters v-model:status="status" v-model:from="from" v-model:to="to" />
+    <OrderFilters v-model:from="from" v-model:to="to" />
 
     <OrdersTable
+      v-model:status="status"
       :orders="pastOrders"
       :loading="loading"
       :error="!!error"

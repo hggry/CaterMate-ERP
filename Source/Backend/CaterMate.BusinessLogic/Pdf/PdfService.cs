@@ -1,3 +1,4 @@
+using System.Globalization;
 using CaterMate.DTOs.Responses;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -12,6 +13,14 @@ namespace CaterMate.BusinessLogic.Pdf;
 /// </summary>
 public class PdfService : IPdfService
 {
+    // ── Locale ───────────────────────────────────────────────────────────────
+    private static readonly CultureInfo De = CultureInfo.GetCultureInfo("de-AT");
+
+    // Formats a decimal as German currency: e.g. 6.240,00 €
+    private static string Eur(decimal v) => v.ToString("N2", De) + " €";
+    // Formats quantity with two decimal places using German locale
+    private static string Qty(decimal v) => v.ToString("N2", De);
+
     // ── Brand colours ────────────────────────────────────────────────────────
     private static readonly Color Primary  = Color.FromHex("#7AAA28");
     private static readonly Color DarkText = Color.FromHex("#3E2818");
@@ -118,34 +127,34 @@ public class PdfService : IPdfService
             if (italic) t.Italic();
         }
         Cell(name);
-        Cell(qty.ToString(), right: true);
-        Cell(unitPrice.ToString("F2"), right: true);
-        Cell(net.ToString("F2"), right: true);
+        Cell(qty.ToString("N0", De), right: true);
+        Cell(unitPrice.ToString("N2", De), right: true);
+        Cell(net.ToString("N2", De), right: true);
         Cell($"{vatRate * 100:F0}%", right: true);
-        Cell(gross.ToString("F2"), right: true);
+        Cell(gross.ToString("N2", De), right: true);
     }
 
-    /// Renders the totals summary block (right-aligned).
+    /// Renders the totals summary block (right-aligned, with thousands separators).
     private static void AddTotalsSummary(ColumnDescriptor col, decimal net, decimal vat, decimal gross)
     {
-        col.Item().PaddingTop(10).AlignRight().Width(200).Column(totals =>
+        col.Item().PaddingTop(10).AlignRight().Width(260).Column(totals =>
         {
             totals.Item().Row(r =>
             {
                 r.RelativeItem().Text("Netto gesamt").FontSize(9).FontColor(DarkText);
-                r.ConstantItem(80).AlignRight().Text($"{net:F2} €").FontSize(9).FontColor(DarkText);
+                r.ConstantItem(100).Text(Eur(net)).AlignRight().FontSize(9).FontColor(DarkText);
             });
             totals.Item().Row(r =>
             {
                 r.RelativeItem().Text("MwSt. gesamt").FontSize(9).FontColor(DarkText);
-                r.ConstantItem(80).AlignRight().Text($"{vat:F2} €").FontSize(9).FontColor(DarkText);
+                r.ConstantItem(100).Text(Eur(vat)).AlignRight().FontSize(9).FontColor(DarkText);
             });
             totals.Item().PaddingTop(4)
                 .LineHorizontal(1).LineColor(Primary);
             totals.Item().PaddingTop(4).Row(r =>
             {
                 r.RelativeItem().Text("Brutto gesamt").Bold().FontSize(11).FontColor(Primary);
-                r.ConstantItem(80).AlignRight().Text($"{gross:F2} €").Bold().FontSize(11).FontColor(Primary);
+                r.ConstantItem(100).Text(Eur(gross)).AlignRight().Bold().FontSize(11).FontColor(Primary);
             });
         });
     }
@@ -263,7 +272,7 @@ public class PdfService : IPdfService
                         table.Cell().ColumnSpan(3).Background(bg).Padding(4)
                             .Text("Verwaltungspauschale").Italic().FontSize(9).FontColor(DarkText);
                         table.Cell().Background(bg).Padding(4)
-                            .AlignRight().Text(quote.AdminFee.ToString("F2")).Italic().FontSize(9).FontColor(DarkText);
+                            .Text(quote.AdminFee.ToString("N2", De)).AlignRight().Italic().FontSize(9).FontColor(DarkText);
                         table.Cell().Background(bg).Padding(4);
                         table.Cell().Background(bg).Padding(4);
                     });
@@ -381,7 +390,7 @@ public class PdfService : IPdfService
                                 cols.RelativeColumn(5);
                                 cols.RelativeColumn(2);
                                 cols.RelativeColumn(1);
-                                cols.ConstantColumn(20);
+                                cols.ConstantColumn(22);
                             });
 
                             // Group header
@@ -396,18 +405,25 @@ public class PdfService : IPdfService
                                 H("Zutat");
                                 H("Menge", right: true);
                                 H("Einheit");
-                                H("☐");
+                                H("");  // Checkbox column header — blank
                             });
 
                             var rowIndex = 0;
                             foreach (var item in group.Items)
                             {
                                 var bg = rowIndex++ % 2 == 0 ? White : AltRow;
-                                table.Cell().Background(bg).Padding(3).Text(item.IngredientName).FontSize(9);
-                                table.Cell().Background(bg).Padding(3).AlignRight()
-                                    .Text(item.RequiredQuantity.ToString("F2")).FontSize(9);
-                                table.Cell().Background(bg).Padding(3).Text(item.Unit).FontSize(9);
-                                table.Cell().Background(bg).Padding(3).Text("").FontSize(9);
+                                table.Cell().Background(bg).Padding(3)
+                                    .Text(item.IngredientName).FontSize(9).FontColor(DarkText);
+                                // TextDescriptor.AlignRight() is used here (not container.AlignRight())
+                                // to avoid text overflowing the cell boundary in QuestPDF.
+                                table.Cell().Background(bg).Padding(3)
+                                    .Text(Qty(item.RequiredQuantity)).AlignRight().FontSize(9).FontColor(DarkText);
+                                table.Cell().Background(bg).Padding(3)
+                                    .Text(item.Unit).FontSize(9).FontColor(DarkText);
+                                // Small bordered box for manual check-off (replaces ☐ which
+                                // is not in the QuestPDF default font set)
+                                table.Cell().Background(bg).Padding(4)
+                                    .Border(0.5f).BorderColor(LightGray).Text("").FontSize(9);
                             }
                         });
                     }

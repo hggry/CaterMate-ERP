@@ -84,11 +84,12 @@ function onOrderCreated(order: OrderDto): void {
       </div>
     </header>
 
-    <OrderFilters v-model:status="status" v-model:from="from" v-model:to="to" />
+    <OrderFilters v-model:from="from" v-model:to="to" />
 
     <CreateOrderDialog v-model:visible="createDialogVisible" @saved="onOrderCreated" />
 
     <OrdersTable
+      v-model:status="status"
       :orders="activeOrders"
       :loading="loading"
       :error="!!error"

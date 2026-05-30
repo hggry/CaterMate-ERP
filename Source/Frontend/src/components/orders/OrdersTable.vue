@@ -2,12 +2,14 @@
 import { computed, watch } from 'vue'
 import DataTable, { type DataTableRowClickEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
+import Select from 'primevue/select'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import StatusTag from '@/components/common/StatusTag.vue'
 import { useFormat } from '@/composables/useFormat'
+import { useOrderStatus } from '@/composables/useOrderStatus'
 import { useResponsivePageRows } from '@/composables/useResponsivePageRows'
-import type { OrderDto } from '@/types/order'
+import { ALL_ORDER_STATUSES, type OrderDto, type OrderStatus } from '@/types/order'
 
 const props = withDefaults(
   defineProps<{
@@ -20,8 +22,14 @@ const props = withDefaults(
   { loading: false, error: false, sortOrder: 1, emptyText: 'Keine Aufträge gefunden.' },
 )
 
+const status = defineModel<OrderStatus | null>('status', { default: null })
+
 const emit = defineEmits<{ rowClick: [orderId: number] }>()
 const { formatDate } = useFormat()
+const { labelFor } = useOrderStatus()
+
+const statusOptions = ALL_ORDER_STATUSES.map((value) => ({ value, label: labelFor(value) }))
+
 const totalOrders = computed(() => props.orders.length)
 const {
   tableViewport,
@@ -68,7 +76,21 @@ function onRowClick(event: DataTableRowClickEvent): void {
       </Column>
       <Column field="guestCount" header="Personen" sortable style="width: 8rem" />
       <Column field="location" header="Ort" sortable />
-      <Column field="status" header="Status" sortable style="width: 12rem">
+
+      <!-- Status column: filter dropdown replaces the sort button -->
+      <Column field="status" style="width: 14rem">
+        <template #header>
+          <Select
+            v-model="status"
+            :options="statusOptions"
+            option-label="label"
+            option-value="value"
+            placeholder="Status"
+            show-clear
+            class="orders-table__status-filter"
+            @click.stop
+          />
+        </template>
         <template #body="{ data }">
           <StatusTag :status="data.status" />
         </template>
@@ -97,5 +119,14 @@ function onRowClick(event: DataTableRowClickEvent): void {
 
 .orders-table :deep(tbody tr) {
   cursor: pointer;
+}
+
+.orders-table__status-filter {
+  width: 100%;
+}
+
+/* Keep the header cell looking like a normal column header */
+.orders-table :deep(.p-datatable-column-header-content) {
+  width: 100%;
 }
 </style>
