@@ -25,12 +25,14 @@
 - **Auslöser:** Neuer Auftrag in Pipeline-Spalte `Neu`
 - **Hauptablauf:**
     1. User öffnet Auftragsliste, navigiert zu neue Aufträge
-    2. Öffnet Detailansicht, prüft Originalanfrage aus Telegram
-    3. Überprüft Auftragsdaten
-    4. Kam der Auftrag über Telegram: von n8n vorgeschlagene Menüartikel sind bereits zugeordnet — User prüft, ergänzt oder entfernt Gerichte nach eigenem Ermessen
-    5. Kam der Auftrag direkt per Frontend: System schlägt Gerichte (mit Kosten und Gewinn) vor, anhand der Sonderwünsche — User ordnet Gerichte zu
-    6. Speichert neuen Status → `Geprüft`
+    2. Öffnet Detailansicht (Tab *Übersicht*), prüft Auftrags-/Stammdaten
+    3. Wechselt in den Tab *Menü* zur Zusammenstellung
+    4. Kam der Auftrag über Telegram: von n8n vorgeschlagene Menüartikel sind bereits zugeordnet und erscheinen in der Menükarte — User prüft, ergänzt oder entfernt Gerichte
+    5. Kam der Auftrag direkt per Frontend: User stellt das Menü aus dem durchsuch-/filterbaren Katalog zusammen. Ungeeignete Gerichte (Allergen-Konflikt mit den Auftragsangaben oder Einzelgericht über Budget) werden als *Ungeeignet* gekennzeichnet und lassen sich ausblenden. Die Menükarte zeigt live Warenwert (netto), Budget-Differenz und internen Deckungsbeitrag
+    6. Sobald mindestens ein Gericht zugeordnet ist, setzt der User den Status → `Geprüft`
 - **Nachbedingung:** Auftrag bereit für Angebotserstellung
+
+> **Hinweis:** Solange einem neuen Auftrag noch kein Gericht zugeordnet ist, führt die Primäraktion zuerst in den Tab *Menü*; erst danach erscheint „Als geprüft markieren".
 
 ---
 
@@ -122,3 +124,24 @@
     3. Hinterlegt Stückliste mit Zutaten und Mengen aus Zutaten-Katalog
     4. Speichert – Artikel steht für Auftragszuordnung bereit
 - **Nachbedingung:** Artikel kann in Angeboten und Einkaufslisten verwendet werden
+
+---
+
+### UC-10: Auftrag wiedereröffnen oder stornieren
+
+- **Akteur:** User
+- **Auslöser:** Kunde hat Änderungswünsche, lehnt das Angebot ab oder springt ganz ab
+
+**Wiedereröffnen (Änderungswünsche / Ablehnung):**
+1. Auftrag befindet sich in `AngebotErstellt` oder `InBeschaffung` (Menü/Stammdaten gesperrt)
+2. User klickt `Wiedereröffnen` → Status springt zurück auf `Geprüft`
+3. Menü-Tab und Stammdaten sind wieder editierbar; das bestehende Angebot bleibt erhalten (weiter herunterladbar/versendbar)
+4. Nach Anpassung erzeugt „Angebot erstellen" eine überschriebene, aktuelle Version; bei erneuter Bestätigung wird die Einkaufsliste neu aufgebaut
+- **Nachbedingung:** Auftrag erneut im aktiven Workflow, Daten konsistent
+
+**Stornieren (Absprung):**
+1. Auftrag in einer offenen Phase (`Neu` … `InVorbereitung`)
+2. User klickt `Stornieren` → Status `Storniert`
+3. Auftrag verschwindet aus der aktiven Liste (per Status-Filter weiterhin auffindbar) und zählt nicht mehr in Dashboard-Kennzahlen
+4. Bei Bedarf kann der Auftrag über `Wiedereröffnen` reaktiviert werden (→ `Geprüft`)
+- **Nachbedingung:** Stornierter Auftrag ist sauber abgebildet, Daten bleiben für Audit erhalten

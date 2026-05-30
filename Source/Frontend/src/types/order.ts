@@ -1,3 +1,4 @@
+// The linear forward pipeline. Drives the stepper, funnel and indexOf logic.
 export const ORDER_STATUSES = [
   'Neu',
   'Geprüft',
@@ -9,7 +10,13 @@ export const ORDER_STATUSES = [
   'Abgerechnet',
 ] as const
 
-export type OrderStatus = (typeof ORDER_STATUSES)[number]
+// Off-pipeline terminal state for cancelled orders (reactivatable via reopen).
+export const CANCELLED_STATUS = 'Storniert' as const
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number] | typeof CANCELLED_STATUS
+
+// Full set incl. the cancelled state — used for status filters.
+export const ALL_ORDER_STATUSES: readonly OrderStatus[] = [...ORDER_STATUSES, CANCELLED_STATUS]
 
 export interface AssignedMenuItemDto {
   id: number

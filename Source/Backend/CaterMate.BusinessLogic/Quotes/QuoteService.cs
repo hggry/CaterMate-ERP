@@ -39,8 +39,10 @@ public class QuoteService : IQuoteService
         var order = await _orderRepo.GetByIdAsync(orderId)
             ?? throw new KeyNotFoundException($"Order {orderId} not found");
 
+        // Regenerating overwrites an existing quote (e.g. after the order was reopened
+        // and the menu changed) so the offer always reflects the current selection.
         if (await _quoteRepo.ExistsByOrderIdAsync(orderId))
-            throw new InvalidOperationException("Für diesen Auftrag existiert bereits ein Angebot.");
+            await _quoteRepo.DeleteByOrderIdAsync(orderId);
 
         var menuItems = (await _orderRepo.GetAssignedMenuItemsAsync(orderId)).ToList();
         var positions = BuildPositions(menuItems, order.GuestCount);

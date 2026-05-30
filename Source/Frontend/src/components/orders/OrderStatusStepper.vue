@@ -5,7 +5,7 @@ import { useOrderStatus } from '@/composables/useOrderStatus'
 
 const props = defineProps<{ status: OrderStatus }>()
 
-const { labelFor, indexOf } = useOrderStatus()
+const { labelFor, indexOf, isCancelled } = useOrderStatus()
 
 const currentIndex = computed(() => indexOf(props.status))
 
@@ -19,7 +19,11 @@ function stateOf(index: number): 'done' | 'active' | 'upcoming' {
 </script>
 
 <template>
-  <ol class="stepper">
+  <div v-if="isCancelled(props.status)" class="stepper-cancelled">
+    <i class="pi pi-ban" />
+    <span>Auftrag storniert</span>
+  </div>
+  <ol v-else class="stepper">
     <li
       v-for="(s, i) in ORDER_STATUSES"
       :key="s"
@@ -36,6 +40,18 @@ function stateOf(index: number): 'done' | 'active' | 'upcoming' {
 </template>
 
 <style scoped>
+.stepper-cancelled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--p-border-radius, 6px);
+  background: color-mix(in srgb, var(--p-red-500, #ef4444) 12%, transparent);
+  color: var(--p-red-500, #ef4444);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
 .stepper {
   display: flex;
   flex-wrap: wrap;

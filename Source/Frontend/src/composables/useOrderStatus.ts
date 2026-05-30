@@ -1,4 +1,4 @@
-import { ORDER_STATUSES, type OrderStatus } from '@/types/order'
+import { ORDER_STATUSES, CANCELLED_STATUS, type OrderStatus } from '@/types/order'
 
 export type OrderActionKind = 'status' | 'navigate' | 'create-quote'
 
@@ -29,6 +29,7 @@ const ACTIONS: Record<OrderStatus, OrderAction | null> = {
   InVorbereitung: { label: 'Als durchgeführt markieren', kind: 'status', targetStatus: 'Durchgeführt', icon: 'pi pi-check' },
   Durchgeführt: { label: 'Rechnung erstellen', kind: 'navigate', targetRoute: 'order-invoice', icon: 'pi pi-file' },
   Abgerechnet: null,
+  Storniert: null,
 }
 
 // Tab a status's work happens in — used to auto-navigate after a status change.
@@ -41,6 +42,7 @@ const TAB_FOR_STATUS: Record<OrderStatus, string> = {
   InVorbereitung: 'order-purchase-list',
   Durchgeführt: 'order-invoice',
   Abgerechnet: 'order-invoice',
+  Storniert: 'order-detail',
 }
 
 const LABELS: Record<OrderStatus, string> = {
@@ -52,9 +54,10 @@ const LABELS: Record<OrderStatus, string> = {
   InVorbereitung: 'In Vorbereitung',
   Durchgeführt: 'Durchgeführt',
   Abgerechnet: 'Abgerechnet',
+  Storniert: 'Storniert',
 }
 
-export type TagSeverity = 'secondary' | 'info' | 'warn' | 'success'
+export type TagSeverity = 'secondary' | 'info' | 'warn' | 'success' | 'danger'
 
 const SEVERITIES: Record<OrderStatus, TagSeverity> = {
   Neu: 'info',
@@ -65,6 +68,7 @@ const SEVERITIES: Record<OrderStatus, TagSeverity> = {
   InVorbereitung: 'warn',
   Durchgeführt: 'success',
   Abgerechnet: 'success',
+  Storniert: 'danger',
 }
 
 export function useOrderStatus() {
@@ -84,9 +88,14 @@ export function useOrderStatus() {
     return SEVERITIES[status]
   }
 
+  // Position in the linear pipeline; -1 for the off-pipeline cancelled state.
   function indexOf(status: OrderStatus): number {
-    return ORDER_STATUSES.indexOf(status)
+    return (ORDER_STATUSES as readonly string[]).indexOf(status)
   }
 
-  return { primaryActionFor, tabForStatus, labelFor, severityFor, indexOf }
+  function isCancelled(status: OrderStatus): boolean {
+    return status === CANCELLED_STATUS
+  }
+
+  return { primaryActionFor, tabForStatus, labelFor, severityFor, indexOf, isCancelled }
 }

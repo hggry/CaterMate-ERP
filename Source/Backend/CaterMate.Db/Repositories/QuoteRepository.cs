@@ -22,6 +22,9 @@ public class QuoteRepository : IQuoteRepository
             TotalNet=@TotalNet, TotalVat=@TotalVat, TotalGross=@TotalGross
         WHERE Id=@Id";
     private const string DeletePositions = "DELETE FROM QuotePositions WHERE QuoteId = @QuoteId";
+    private const string DeletePositionsByOrder =
+        "DELETE qp FROM QuotePositions qp JOIN Quotes q ON q.Id = qp.QuoteId WHERE q.OrderId = @OrderId";
+    private const string DeleteQuoteByOrder = "DELETE FROM Quotes WHERE OrderId = @OrderId";
 
     public QuoteRepository(DapperContext context) => _context = context;
 
@@ -70,6 +73,16 @@ public class QuoteRepository : IQuoteRepository
             p.QuoteId = quote.Id;
             await conn.ExecuteAsync(InsertPosition, p, tx);
         }
+        tx.Commit();
+    }
+
+    public async Task DeleteByOrderIdAsync(int orderId)
+    {
+        using var conn = _context.CreateConnection();
+        conn.Open();
+        using var tx = conn.BeginTransaction();
+        await conn.ExecuteAsync(DeletePositionsByOrder, new { OrderId = orderId }, tx);
+        await conn.ExecuteAsync(DeleteQuoteByOrder, new { OrderId = orderId }, tx);
         tx.Commit();
     }
 }

@@ -8,6 +8,7 @@ import OrderListView from '@/views/OrderListView.vue'
 import OrderArchiveView from '@/views/OrderArchiveView.vue'
 import OrderDetailView from '@/views/OrderDetailView.vue'
 import OrderOverviewView from '@/views/OrderOverviewView.vue'
+import OrderMenuView from '@/views/OrderMenuView.vue'
 import OrderQuoteView from '@/views/OrderQuoteView.vue'
 import OrderPurchaseListView from '@/views/OrderPurchaseListView.vue'
 import OrderInvoiceView from '@/views/OrderInvoiceView.vue'
@@ -36,6 +37,7 @@ const routes: RouteRecordRaw[] = [
         props: true,
         children: [
           { path: '', name: 'order-detail', component: OrderOverviewView },
+          { path: 'menu', name: 'order-menu', component: OrderMenuView },
           { path: 'quote', name: 'order-quote', component: OrderQuoteView },
           { path: 'purchase-list', name: 'order-purchase-list', component: OrderPurchaseListView },
           { path: 'invoice', name: 'order-invoice', component: OrderInvoiceView },

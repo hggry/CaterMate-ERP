@@ -10,5 +10,7 @@ public interface IOrderService
     Task<OrderDto> CreateAsync(CreateOrderRequest request);
     Task<OrderDto> CreateFromN8nAsync(N8nCreateOrderRequest request);
     Task<OrderDto> UpdateAsync(int id, UpdateOrderRequest request);
+    Task<OrderDto> ReopenAsync(int id);
+    Task<OrderDto> CancelAsync(int id);
     Task DeleteAsync(int id);
 }

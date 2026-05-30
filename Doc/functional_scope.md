@@ -13,9 +13,12 @@
 
 **1.1.2 Auftragsverwaltung**
 
-- Übersichtsliste aller Aufträge mit Filter nach Status und Datum.
+- Übersichtsliste aller Aufträge mit Filter nach Status und Datum. Standard: anstehende Events (nächstes Eventdatum zuerst); vergangene liegen im Archiv. Spaltensortierung wie im Datei-Explorer.
 - Status-Pipeline mit klar definierten Phasen: Neu → Geprüft → AngebotErstellt → Bestätigt → InBeschaffung → InVorbereitung → Durchgeführt → Abgerechnet.
-- Detailansicht je Auftrag mit allen Stammdaten, Originalanfrage und Bearbeitungshistorie.
+- **Wiedereröffnen:** Aufträge aus `AngebotErstellt`/`InBeschaffung` zurück auf `Geprüft` setzen (Menü/Stammdaten wieder editierbar; Angebot bleibt erhalten, wird beim Neugenerieren überschrieben).
+- **Stornieren:** Off-Pipeline-Status `Storniert` für abgesprungene Aufträge — aus der aktiven Liste ausgeblendet, nicht in Kennzahlen, reaktivierbar.
+- Detailansicht je Auftrag mit Tabs (Übersicht, Menü, Angebot, Einkaufsliste, Rechnung), Stammdaten und Status-Stepper.
+- Menü-Zusammenstellung im eigenen Tab: durchsuch-/filterbarer Katalog, Kennzeichnung ungeeigneter Gerichte (Allergen/Budget), Live-Menükarte mit Warenwert, Budget-Differenz und Deckungsbeitrag.
 - Bearbeitung aller Felder mit Validierung (z. B. Personenanzahl > 0, Datum in der Zukunft).
 
 **1.1.3 Menü- und Artikelverwaltung (Stammdaten)**

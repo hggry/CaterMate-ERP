@@ -22,7 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const confirm = useConfirm()
 const toast = useToast()
-const { indexOf, primaryActionFor, tabForStatus, labelFor } = useOrderStatus()
+const { indexOf, primaryActionFor, tabForStatus, labelFor, isCancelled } = useOrderStatus()
 
 const order = ref<OrderDto | null>(null)
 const loading = ref(false)
@@ -47,17 +47,33 @@ provide(ORDER_CONTEXT, { order, orderId, reload })
 
 const statusIndex = computed(() => (order.value ? indexOf(order.value.status) : -1))
 
-const primaryAction = computed<OrderAction | null>(() =>
-  order.value ? primaryActionFor(order.value.status) : null,
-)
+const primaryAction = computed<OrderAction | null>(() => {
+  if (!order.value) return null
+  const o = order.value
+  // A new order needs a menu before it can be qualified — guide the user to the
+  // Menü tab first; only once dishes are assigned does "Als geprüft markieren" appear.
+  if (o.status === 'Neu' && o.assignedMenuItems.length === 0) {
+    return { label: 'Menü zusammenstellen', kind: 'navigate', targetRoute: 'order-menu', icon: 'pi pi-book' }
+  }
+  return primaryActionFor(o.status)
+})
 
 // Navigate actions are hidden once the user is already on the target tab.
 const showPrimaryAction = computed(() => {
   const action = primaryAction.value
   if (!action) return false
+  if (order.value && isCancelled(order.value.status)) return false
   if (action.kind === 'navigate' || action.kind === 'create-quote') return route.name !== action.targetRoute
   return true
 })
+
+// Reopen: released/confirmed offer or a cancelled order back to editable 'Geprüft'.
+const REOPENABLE = ['AngebotErstellt', 'InBeschaffung', 'Storniert']
+const canReopen = computed(() => !!order.value && REOPENABLE.includes(order.value.status))
+
+// Cancel: any open phase up to and including preparation.
+const CANCELLABLE = ['Neu', 'Geprüft', 'AngebotErstellt', 'Bestätigt', 'InBeschaffung', 'InVorbereitung']
+const canCancel = computed(() => !!order.value && CANCELLABLE.includes(order.value.status))
 
 async function runStatusChange(targetStatus: OrderStatus): Promise<void> {
   busy.value = true
@@ -134,6 +150,49 @@ function confirmDelete(): void {
   })
 }
 
+function confirmReopen(): void {
+  confirm.require({
+    message:
+      'Auftrag wieder auf „Geprüft" öffnen? Menü und Stammdaten werden wieder bearbeitbar. Das bestehende Angebot bleibt erhalten und wird beim erneuten Generieren überschrieben.',
+    header: 'Auftrag wiedereröffnen',
+    icon: 'pi pi-undo',
+    accept: async () => {
+      busy.value = true
+      try {
+        await ordersApi.reopen(orderId)
+        await reload()
+        toast.success('Auftrag wurde wiedereröffnet.')
+      } catch (e) {
+        toast.error(apiErrorMessage(e))
+      } finally {
+        busy.value = false
+      }
+    },
+  })
+}
+
+function confirmCancel(): void {
+  confirm.require({
+    message: 'Auftrag wirklich stornieren? Er wird aus der aktiven Liste ausgeblendet, kann aber wiedereröffnet werden.',
+    header: 'Auftrag stornieren',
+    icon: 'pi pi-ban',
+    acceptProps: { label: 'Stornieren', severity: 'danger' },
+    rejectProps: { label: 'Abbrechen', severity: 'secondary', outlined: true },
+    accept: async () => {
+      busy.value = true
+      try {
+        await ordersApi.cancel(orderId)
+        await reload()
+        toast.success('Auftrag wurde storniert.')
+      } catch (e) {
+        toast.error(apiErrorMessage(e))
+      } finally {
+        busy.value = false
+      }
+    },
+  })
+}
+
 interface TabDef {
   label: string
   routeName: string
@@ -142,12 +201,15 @@ interface TabDef {
 
 const tabs: TabDef[] = [
   { label: 'Übersicht', routeName: 'order-detail', minStatusIndex: 0 },
+  { label: 'Menü', routeName: 'order-menu', minStatusIndex: 0 },
   { label: 'Angebot', routeName: 'order-quote', minStatusIndex: indexOf('Geprüft') },
   { label: 'Einkaufsliste', routeName: 'order-purchase-list', minStatusIndex: indexOf('AngebotErstellt') },
   { label: 'Rechnung', routeName: 'order-invoice', minStatusIndex: indexOf('Durchgeführt') },
 ]
 
 function tabEnabled(tab: TabDef): boolean {
+  // Cancelled orders (statusIndex -1) keep the always-on tabs (Übersicht, Menü) readable.
+  if (order.value && isCancelled(order.value.status)) return tab.minStatusIndex === 0
   return statusIndex.value >= tab.minStatusIndex
 }
 </script>
@@ -185,6 +247,24 @@ function tabEnabled(tab: TabDef): boolean {
             text
             :disabled="busy"
             @click="confirmDelete"
+          />
+          <Button
+            v-if="canCancel"
+            label="Stornieren"
+            icon="pi pi-ban"
+            severity="danger"
+            text
+            :disabled="busy"
+            @click="confirmCancel"
+          />
+          <Button
+            v-if="canReopen"
+            label="Wiedereröffnen"
+            icon="pi pi-undo"
+            severity="secondary"
+            outlined
+            :loading="busy"
+            @click="confirmReopen"
           />
           <Button
             v-if="showPrimaryAction && primaryAction"

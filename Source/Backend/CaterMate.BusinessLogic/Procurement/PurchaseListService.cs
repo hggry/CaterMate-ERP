@@ -31,8 +31,10 @@ public class PurchaseListService : IPurchaseListService
 
     public async Task CreateForOrderAsync(int orderId)
     {
+        // Rebuild from scratch on re-confirmation (e.g. after a reopen + menu change),
+        // so the list always reflects the current menu selection.
         if (await _repo.ExistsByOrderIdAsync(orderId))
-            return;
+            await _repo.DeleteByOrderIdAsync(orderId);
 
         var order = await _orderRepo.GetByIdAsync(orderId)
             ?? throw new KeyNotFoundException($"Order {orderId} not found");

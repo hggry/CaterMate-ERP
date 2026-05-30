@@ -10,4 +10,5 @@ public interface IPurchaseListRepository
     Task UpdateItemIsDoneAsync(int itemId, bool isDone);
     Task<bool> ExistsByOrderIdAsync(int orderId);
     Task<bool> ItemExistsAsync(int itemId);
+    Task DeleteByOrderIdAsync(int orderId);
 }

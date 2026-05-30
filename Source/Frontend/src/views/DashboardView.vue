@@ -41,6 +41,9 @@ const personValues = computed(() =>
   mapToWindow(monthWindow, data.value?.guestsByMonth ?? [], 'guests'),
 )
 
+// Cancelled orders are excluded from the calendar and upcoming-events widgets.
+const activeOrders = computed(() => (orders.value ?? []).filter((o) => o.status !== 'Storniert'))
+
 function openOrders(status: OrderStatus): void {
   router.push({ name: 'orders', query: { status } })
 }
@@ -105,14 +108,14 @@ function openOrder(orderId: number): void {
         <Card>
           <template #title>Event-Kalender</template>
           <template #content>
-            <EventHeatmap :orders="orders ?? []" />
+            <EventHeatmap :orders="activeOrders" />
           </template>
         </Card>
 
         <Card>
           <template #title>Anstehende Events</template>
           <template #content>
-            <UpcomingEvents :orders="orders ?? []" :limit="4" @select="openOrder" />
+            <UpcomingEvents :orders="activeOrders" :limit="4" @select="openOrder" />
           </template>
         </Card>
       </div>

@@ -9,4 +9,5 @@ public interface IQuoteRepository
     Task<int> CreateAsync(QuoteEntity quote, IEnumerable<QuotePositionEntity> positions);
     Task UpdateAsync(QuoteEntity quote, IEnumerable<QuotePositionEntity> positions);
     Task<bool> ExistsByOrderIdAsync(int orderId);
+    Task DeleteByOrderIdAsync(int orderId);
 }

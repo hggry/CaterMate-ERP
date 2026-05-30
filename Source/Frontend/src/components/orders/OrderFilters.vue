@@ -2,7 +2,7 @@
 import Select from 'primevue/select'
 import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
-import { ORDER_STATUSES, type OrderStatus } from '@/types/order'
+import { ALL_ORDER_STATUSES, type OrderStatus } from '@/types/order'
 import { useOrderStatus } from '@/composables/useOrderStatus'
 
 const status = defineModel<OrderStatus | null>('status')
@@ -11,7 +11,7 @@ const to = defineModel<Date | null>('to')
 
 const { labelFor } = useOrderStatus()
 
-const statusOptions = ORDER_STATUSES.map((value) => ({ value, label: labelFor(value) }))
+const statusOptions = ALL_ORDER_STATUSES.map((value) => ({ value, label: labelFor(value) }))
 
 function reset(): void {
   status.value = null

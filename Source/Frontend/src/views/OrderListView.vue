@@ -7,7 +7,13 @@ import OrdersTable from '@/components/orders/OrdersTable.vue'
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog.vue'
 import { ordersApi } from '@/services/ordersApi'
 import { useApi } from '@/composables/useApi'
-import { ORDER_STATUSES, type OrderDto, type OrderQuery, type OrderStatus } from '@/types/order'
+import {
+  ORDER_STATUSES,
+  CANCELLED_STATUS,
+  type OrderDto,
+  type OrderQuery,
+  type OrderStatus,
+} from '@/types/order'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,11 +26,16 @@ const to = ref<Date | null>(null)
 
 const { data: orders, loading, error, execute } = useApi(ordersApi.list)
 
-// Only upcoming / today's events; past events live in the archive.
+// Only upcoming / today's events; past events live in the archive. Cancelled
+// orders are hidden unless the user explicitly filters for them.
 const upcomingOrders = computed(() => {
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
-  return (orders.value ?? []).filter((o) => new Date(o.eventDate) >= startOfToday)
+  return (orders.value ?? []).filter((o) => {
+    if (new Date(o.eventDate) < startOfToday) return false
+    if (o.status === CANCELLED_STATUS && status.value !== CANCELLED_STATUS) return false
+    return true
+  })
 })
 
 function load(): void {

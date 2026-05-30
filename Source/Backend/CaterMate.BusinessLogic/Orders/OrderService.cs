@@ -178,6 +178,42 @@ public class OrderService : IOrderService
         await _orderRepo.DeleteAsync(id);
     }
 
+    // Phases a released/confirmed (or cancelled) order can be reopened from.
+    private static readonly HashSet<string> ReopenableFrom =
+        new() { "AngebotErstellt", "InBeschaffung", "Storniert" };
+
+    // Phases an order may still be cancelled from (event not yet carried out).
+    private static readonly HashSet<string> CancellableFrom =
+        new() { "Neu", "Geprüft", "AngebotErstellt", "Bestätigt", "InBeschaffung", "InVorbereitung" };
+
+    public async Task<OrderDto> ReopenAsync(int id)
+    {
+        var order = await _orderRepo.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"Order {id} not found");
+
+        if (!ReopenableFrom.Contains(order.Status))
+            throw new InvalidOperationException(
+                $"Auftrag im Status '{order.Status}' kann nicht wiedereröffnet werden.");
+
+        // Back to 'Geprüft' — menu and master data become editable again. The existing
+        // quote / purchase list are kept and overwritten on the next generate / confirm.
+        await _orderRepo.UpdateStatusAsync(id, "Geprüft");
+        return await GetByIdAsync(id);
+    }
+
+    public async Task<OrderDto> CancelAsync(int id)
+    {
+        var order = await _orderRepo.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"Order {id} not found");
+
+        if (!CancellableFrom.Contains(order.Status))
+            throw new InvalidOperationException(
+                $"Auftrag im Status '{order.Status}' kann nicht storniert werden.");
+
+        await _orderRepo.UpdateStatusAsync(id, "Storniert");
+        return await GetByIdAsync(id);
+    }
+
     private static OrderDto MapToDto(OrderEntity order, CaterMate.Db.Entities.CustomerEntity? customer, IEnumerable<MenuItemEntity> menuItems) =>
         new()
         {

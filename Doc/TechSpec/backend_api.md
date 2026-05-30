@@ -175,6 +175,8 @@ Aufträge können über zwei Kanäle angelegt werden:
 | POST | `/api/orders` | Neuen Auftrag anlegen (Frontend) | JWT |
 | PATCH | `/api/orders/{id}` | Auftrag aktualisieren (Status, Menüartikel, Felder) | JWT |
 | DELETE | `/api/orders/{id}` | Auftrag löschen (nur Status `Neu`) | JWT |
+| POST | `/api/orders/{id}/reopen` | Auftrag wiedereröffnen → Status `Geprüft` | JWT |
+| POST | `/api/orders/{id}/cancel` | Auftrag stornieren → Status `Storniert` | JWT |
 
 **Query-Parameter GET /api/orders:**
 
@@ -233,7 +235,20 @@ Aufträge können über zwei Kanäle angelegt werden:
 Neu → Geprüft → AngebotErstellt → Bestätigt → InBeschaffung → InVorbereitung → Durchgeführt → Abgerechnet
 ```
 
-Ungültige Übergänge: `409 Conflict`.
+Lineare Vorwärts-Übergänge laufen über `PATCH`. Ungültige Übergänge: `409 Conflict`.
+
+**Off-Pipeline-Übergänge (eigene Endpunkte, nicht über `PATCH`):**
+
+- **Wiedereröffnen** (`POST /reopen`): aus `AngebotErstellt`, `InBeschaffung` oder `Storniert`
+  zurück auf `Geprüft`. Menü und Stammdaten werden wieder editierbar; ein bestehendes Angebot /
+  eine Einkaufsliste bleiben erhalten und werden beim erneuten Generieren bzw. Bestätigen
+  überschrieben.
+- **Stornieren** (`POST /cancel`): aus jeder offenen Phase (`Neu` … `InVorbereitung`) auf
+  `Storniert`. `Storniert` ist ein Off-Pipeline-Zustand, der per Wiedereröffnen reaktivierbar ist.
+  Stornierte Aufträge werden in der aktiven Liste ausgeblendet (per Status-Filter auffindbar) und
+  fließen nicht in die Dashboard-Kennzahlen ein.
+
+Unzulässige Reopen-/Cancel-Aufrufe (falsche Ausgangsphase): `409 Conflict`.
 
 ---
 
@@ -295,6 +310,10 @@ Ungültige Übergänge: `409 Conflict`.
 | GET | `/api/orders/{orderId}/quote` | Angebot abrufen | Ja |
 | PUT | `/api/orders/{orderId}/quote` | Angebot manuell anpassen | Ja |
 | GET | `/api/orders/{orderId}/quote/pdf` | Angebot als PDF herunterladen | Ja |
+
+> **Hinweis:** `POST /quote` ist ein Upsert — existiert bereits ein Angebot (z. B. nach einem
+> Wiedereröffnen mit geändertem Menü), wird es **überschrieben**, sodass das Angebot stets die
+> aktuelle Menüauswahl widerspiegelt.
 
 **QuoteDto:**
 ```json

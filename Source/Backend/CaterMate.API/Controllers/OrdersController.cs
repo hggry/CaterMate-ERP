@@ -58,6 +58,20 @@ public class OrdersController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:int}/reopen")]
+    public async Task<IActionResult> Reopen(int id)
+    {
+        var order = await _orderService.ReopenAsync(id);
+        return Ok(order);
+    }
+
+    [HttpPost("{id:int}/cancel")]
+    public async Task<IActionResult> Cancel(int id)
+    {
+        var order = await _orderService.CancelAsync(id);
+        return Ok(order);
+    }
+
     [HttpGet("{id:int}/suggestions")]
     public async Task<IActionResult> GetSuggestions(int id)
     {

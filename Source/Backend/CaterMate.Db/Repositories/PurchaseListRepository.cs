@@ -18,6 +18,9 @@ public class PurchaseListRepository : IPurchaseListRepository
         INSERT INTO PurchaseListItems (PurchaseListId, IngredientId, IngredientName, RequiredQuantity, Unit, Category, IsDone)
         VALUES (@PurchaseListId, @IngredientId, @IngredientName, @RequiredQuantity, @Unit, @Category, @IsDone)";
     private const string UpdateIsDone = "UPDATE PurchaseListItems SET IsDone = @IsDone WHERE Id = @Id";
+    private const string DeleteItemsByOrder =
+        "DELETE pli FROM PurchaseListItems pli JOIN PurchaseLists pl ON pl.Id = pli.PurchaseListId WHERE pl.OrderId = @OrderId";
+    private const string DeleteListByOrder = "DELETE FROM PurchaseLists WHERE OrderId = @OrderId";
 
     public PurchaseListRepository(DapperContext context) => _context = context;
 
@@ -64,5 +67,15 @@ public class PurchaseListRepository : IPurchaseListRepository
     {
         using var conn = _context.CreateConnection();
         await conn.ExecuteAsync(UpdateIsDone, new { Id = itemId, IsDone = isDone });
+    }
+
+    public async Task DeleteByOrderIdAsync(int orderId)
+    {
+        using var conn = _context.CreateConnection();
+        conn.Open();
+        using var tx = conn.BeginTransaction();
+        await conn.ExecuteAsync(DeleteItemsByOrder, new { OrderId = orderId }, tx);
+        await conn.ExecuteAsync(DeleteListByOrder, new { OrderId = orderId }, tx);
+        tx.Commit();
     }
 }
