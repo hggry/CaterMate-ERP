@@ -100,6 +100,14 @@ function onOrderCreated(order: OrderDto): void {
 </template>
 
 <style scoped>
+.order-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .order-list__header {
   display: flex;
   align-items: center;
@@ -107,6 +115,7 @@ function onOrderCreated(order: OrderDto): void {
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .order-list__header h1 {
@@ -117,5 +126,9 @@ function onOrderCreated(order: OrderDto): void {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.order-list :deep(.order-filters) {
+  flex-shrink: 0;
 }
 </style>

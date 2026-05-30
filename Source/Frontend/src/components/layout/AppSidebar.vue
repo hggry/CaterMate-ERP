@@ -85,10 +85,13 @@ function logout(): void {
   flex-direction: column;
   width: 18rem;
   height: 100vh;
+  height: 100dvh;
+  flex-shrink: 0;
   padding: 1rem;
   box-sizing: border-box;
   background: var(--p-content-background);
   border-right: 1px solid var(--p-content-border-color);
+  overflow: hidden;
 }
 
 .app-sidebar__brand {
@@ -115,6 +118,8 @@ function logout(): void {
   flex-direction: column;
   gap: 0.25rem;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .app-sidebar__link {
@@ -168,5 +173,43 @@ function logout(): void {
   padding: 0 0.5rem;
   font-size: 0.875rem;
   color: var(--p-text-muted-color);
+}
+
+@media (max-width: 48rem) {
+  .app-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 45vh;
+    max-height: 45dvh;
+    padding: 0.75rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--p-content-border-color);
+  }
+
+  .app-sidebar__brand {
+    margin-bottom: 0.5rem;
+  }
+
+  .app-sidebar__nav {
+    flex: 0 1 auto;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.25rem;
+  }
+
+  .app-sidebar__link {
+    flex: 0 0 auto;
+  }
+
+  .app-sidebar__footer {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 0.75rem;
+  }
+
+  .app-sidebar__footer :deep(.p-button) {
+    width: auto;
+  }
 }
 </style>

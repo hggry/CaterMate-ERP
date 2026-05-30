@@ -14,12 +14,27 @@ import AppSidebar from './AppSidebar.vue'
 <style scoped>
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .app-layout__content {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
   padding: 1.5rem;
-  overflow-x: auto;
+  overflow: auto;
+}
+
+@media (max-width: 48rem) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .app-layout__content {
+    padding: 1rem;
+  }
 }
 </style>

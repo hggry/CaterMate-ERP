@@ -66,6 +66,14 @@ function openOrder(orderId: number): void {
 </template>
 
 <style scoped>
+.order-archive {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .order-archive__header {
   display: flex;
   align-items: center;
@@ -73,9 +81,14 @@ function openOrder(orderId: number): void {
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .order-archive__header h1 {
   margin: 0;
+}
+
+.order-archive :deep(.order-filters) {
+  flex-shrink: 0;
 }
 </style>
