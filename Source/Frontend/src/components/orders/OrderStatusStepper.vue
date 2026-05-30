@@ -50,10 +50,11 @@ function stateOf(index: number): 'done' | 'active' | 'upcoming' {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.8125rem;
+  font-size: clamp(0.75rem, 2.5vw, 0.8125rem);
   color: var(--p-text-muted-color);
 }
 
+/* Horizontal connector between steps (wide layout). */
 .stepper__step:not(:last-child)::after {
   content: '';
   width: 1.25rem;
@@ -63,6 +64,7 @@ function stateOf(index: number): 'done' | 'active' | 'upcoming' {
 }
 
 .stepper__marker {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,5 +91,41 @@ function stateOf(index: number): 'done' | 'active' | 'upcoming' {
 .stepper__step--active .stepper__label {
   color: var(--p-text-color);
   font-weight: 600;
+}
+
+/* Narrow layout: switch to a vertical stepper with a connecting line that
+   runs down from each marker to the next. */
+@media (max-width: 640px) {
+  .stepper {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .stepper__step {
+    gap: 0.625rem;
+    padding: 0.25rem 0;
+  }
+
+  /* Replace the horizontal connector with a vertical one under the marker. */
+  .stepper__step:not(:last-child)::after {
+    display: none;
+  }
+
+  .stepper__step:not(:last-child) .stepper__marker::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 0.5rem;
+    background: var(--p-content-border-color);
+  }
+
+  .stepper__step--done .stepper__marker::after {
+    background: var(--p-primary-color);
+  }
 }
 </style>

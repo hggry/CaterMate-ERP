@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import DataTable, { type DataTableRowClickEvent } from 'primevue/datatable'
-import Column from 'primevue/column'
 import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
-import Message from 'primevue/message'
 import OrderFilters from '@/components/orders/OrderFilters.vue'
+import OrdersTable from '@/components/orders/OrdersTable.vue'
 import CreateOrderDialog from '@/components/orders/CreateOrderDialog.vue'
-import StatusTag from '@/components/common/StatusTag.vue'
 import { ordersApi } from '@/services/ordersApi'
 import { useApi } from '@/composables/useApi'
-import { useFormat } from '@/composables/useFormat'
 import { ORDER_STATUSES, type OrderDto, type OrderQuery, type OrderStatus } from '@/types/order'
 
 const route = useRoute()
 const router = useRouter()
-const { formatDate } = useFormat()
 
 const createDialogVisible = ref(false)
 
@@ -25,6 +19,13 @@ const from = ref<Date | null>(null)
 const to = ref<Date | null>(null)
 
 const { data: orders, loading, error, execute } = useApi(ordersApi.list)
+
+// Only upcoming / today's events; past events live in the archive.
+const upcomingOrders = computed(() => {
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+  return (orders.value ?? []).filter((o) => new Date(o.eventDate) >= startOfToday)
+})
 
 function load(): void {
   const query: OrderQuery = {}
@@ -47,8 +48,8 @@ onMounted(() => {
 
 watch([status, from, to], load)
 
-function onRowClick(event: DataTableRowClickEvent): void {
-  router.push({ name: 'order-detail', params: { id: String(event.data.id) } })
+function openOrder(orderId: number): void {
+  router.push({ name: 'order-detail', params: { id: String(orderId) } })
 }
 
 function onOrderCreated(order: OrderDto): void {
@@ -60,45 +61,30 @@ function onOrderCreated(order: OrderDto): void {
   <div class="order-list">
     <header class="order-list__header">
       <h1>Aufträge</h1>
-      <Button label="Neuer Auftrag" icon="pi pi-plus" @click="createDialogVisible = true" />
+      <div class="order-list__actions">
+        <Button
+          label="Vergangene Aufträge"
+          icon="pi pi-history"
+          severity="secondary"
+          outlined
+          @click="router.push({ name: 'orders-archive' })"
+        />
+        <Button label="Neuer Auftrag" icon="pi pi-plus" @click="createDialogVisible = true" />
+      </div>
     </header>
 
     <OrderFilters v-model:status="status" v-model:from="from" v-model:to="to" />
 
     <CreateOrderDialog v-model:visible="createDialogVisible" @saved="onOrderCreated" />
 
-    <Message v-if="error" severity="error" :closable="false">
-      Aufträge konnten nicht geladen werden.
-    </Message>
-
-    <div v-if="loading" class="order-list__center">
-      <ProgressSpinner style="width: 3rem; height: 3rem" />
-    </div>
-
-    <DataTable
-      v-else
-      :value="orders ?? []"
-      paginator
-      :rows="10"
-      row-hover
-      data-key="id"
-      class="order-list__table"
-      @row-click="onRowClick"
-    >
-      <template #empty>Keine Aufträge gefunden.</template>
-      <Column field="id" header="Nr." style="width: 5rem" />
-      <Column field="customerName" header="Kunde" />
-      <Column header="Eventdatum">
-        <template #body="{ data }">{{ formatDate(data.eventDate) }}</template>
-      </Column>
-      <Column field="guestCount" header="Personen" style="width: 8rem" />
-      <Column field="location" header="Ort" />
-      <Column header="Status" style="width: 12rem">
-        <template #body="{ data }">
-          <StatusTag :status="data.status" />
-        </template>
-      </Column>
-    </DataTable>
+    <OrdersTable
+      :orders="upcomingOrders"
+      :loading="loading"
+      :error="!!error"
+      :sort-order="1"
+      empty-text="Keine anstehenden Aufträge."
+      @row-click="openOrder"
+    />
   </div>
 </template>
 
@@ -107,6 +93,8 @@ function onOrderCreated(order: OrderDto): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin-bottom: 1rem;
 }
 
@@ -114,13 +102,9 @@ function onOrderCreated(order: OrderDto): void {
   margin: 0;
 }
 
-.order-list__center {
+.order-list__actions {
   display: flex;
-  justify-content: center;
-  padding: 3rem;
-}
-
-.order-list__table :deep(tbody tr) {
-  cursor: pointer;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 </style>

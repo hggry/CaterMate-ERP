@@ -5,6 +5,7 @@ import LoginView from '@/views/LoginView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import OrderListView from '@/views/OrderListView.vue'
+import OrderArchiveView from '@/views/OrderArchiveView.vue'
 import OrderDetailView from '@/views/OrderDetailView.vue'
 import OrderOverviewView from '@/views/OrderOverviewView.vue'
 import OrderQuoteView from '@/views/OrderQuoteView.vue'
@@ -28,6 +29,7 @@ const routes: RouteRecordRaw[] = [
       { path: '', redirect: { name: 'dashboard' } },
       { path: 'dashboard', name: 'dashboard', component: DashboardView },
       { path: 'orders', name: 'orders', component: OrderListView },
+      { path: 'orders/archive', name: 'orders-archive', component: OrderArchiveView },
       {
         path: 'orders/:id',
         component: OrderDetailView,

@@ -1,53 +1,52 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Chart from 'primevue/chart'
 import Card from 'primevue/card'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
+import StatusKpis from '@/components/dashboard/StatusKpis.vue'
+import KpiCards from '@/components/dashboard/KpiCards.vue'
+import MonthlyBarChart from '@/components/dashboard/MonthlyBarChart.vue'
+import PipelineFunnel from '@/components/dashboard/PipelineFunnel.vue'
+import UpcomingEvents from '@/components/dashboard/UpcomingEvents.vue'
+import EventHeatmap from '@/components/dashboard/EventHeatmap.vue'
 import { dashboardApi } from '@/services/dashboardApi'
+import { ordersApi } from '@/services/ordersApi'
 import { useApi } from '@/composables/useApi'
 import { useFormat } from '@/composables/useFormat'
-import { useOrderStatus } from '@/composables/useOrderStatus'
-import { ORDER_STATUSES, type OrderStatus } from '@/types/order'
+import { useMonthWindow } from '@/composables/useMonthWindow'
+import type { OrderStatus } from '@/types/order'
 
 const router = useRouter()
 const { formatCurrency } = useFormat()
-const { labelFor } = useOrderStatus()
+const { buildMonthWindow, mapToWindow } = useMonthWindow()
 
 const { data, loading, error, execute } = useApi(dashboardApi.get)
+const { data: orders, execute: loadOrders } = useApi(ordersApi.list)
 
-onMounted(() => execute())
+onMounted(() => {
+  execute()
+  loadOrders({})
+})
 
-const kpis = computed(() =>
-  ORDER_STATUSES.map((status) => ({
-    status,
-    label: labelFor(status),
-    count: data.value?.ordersByStatus[status] ?? 0,
-  })),
+// Fixed 12-month window (10 past + current + next) so months stay comparable.
+const monthWindow = buildMonthWindow(10, 1)
+const monthLabels = monthWindow.map((b) => b.label)
+const revenueValues = computed(() =>
+  mapToWindow(monthWindow, data.value?.revenueByMonth ?? [], 'totalGross'),
 )
-
-const chartData = computed(() => ({
-  labels: data.value?.revenueByMonth.map((m) => m.month) ?? [],
-  datasets: [
-    {
-      label: 'Umsatz (Brutto)',
-      data: data.value?.revenueByMonth.map((m) => m.totalGross) ?? [],
-      backgroundColor: '#7aaa28',
-    },
-  ],
-}))
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-}
+const guestValues = computed(() =>
+  mapToWindow(monthWindow, data.value?.guestsByMonth ?? [], 'guests'),
+)
 
 function openOrders(status: OrderStatus): void {
   router.push({ name: 'orders', query: { status } })
+}
+
+function openOrder(orderId: number): void {
+  router.push({ name: 'order-detail', params: { id: String(orderId) } })
 }
 </script>
 
@@ -64,31 +63,57 @@ function openOrders(status: OrderStatus): void {
     </div>
 
     <template v-else>
-      <section class="dashboard__kpis">
-        <button
-          v-for="kpi in kpis"
-          :key="kpi.status"
-          type="button"
-          class="dashboard__kpi"
-          @click="openOrders(kpi.status)"
-        >
-          <span class="dashboard__kpi-count">{{ kpi.count }}</span>
-          <span class="dashboard__kpi-label">{{ kpi.label }}</span>
-        </button>
-      </section>
+      <KpiCards :kpis="data?.kpis" />
+
+      <StatusKpis :orders-by-status="data?.ordersByStatus ?? {}" @select="openOrders" />
+
+      <Card>
+        <template #title>Event-Kalender</template>
+        <template #content>
+          <EventHeatmap :orders="orders ?? []" />
+        </template>
+      </Card>
 
       <div class="dashboard__grid">
         <Card>
           <template #title>Umsatz pro Monat</template>
           <template #content>
-            <div v-if="data && data.revenueByMonth.length" class="dashboard__chart">
-              <Chart type="bar" :data="chartData" :options="chartOptions" />
-            </div>
-            <p v-else class="dashboard__placeholder">Keine Umsatzdaten vorhanden.</p>
+            <MonthlyBarChart
+              :labels="monthLabels"
+              :values="revenueValues"
+              label="Umsatz (Brutto)"
+              :value-formatter="formatCurrency"
+            />
           </template>
         </Card>
 
         <Card>
+          <template #title>Gäste pro Monat</template>
+          <template #content>
+            <MonthlyBarChart
+              :labels="monthLabels"
+              :values="guestValues"
+              label="Personen"
+              color="#3b82f6"
+            />
+          </template>
+        </Card>
+
+        <Card>
+          <template #title>Pipeline</template>
+          <template #content>
+            <PipelineFunnel :orders-by-status="data?.ordersByStatus ?? {}" @select="openOrders" />
+          </template>
+        </Card>
+
+        <Card>
+          <template #title>Anstehende Events</template>
+          <template #content>
+            <UpcomingEvents :orders="orders ?? []" @select="openOrder" />
+          </template>
+        </Card>
+
+        <Card class="dashboard__wide">
           <template #title>Top-Kunden</template>
           <template #content>
             <DataTable :value="data?.topCustomers ?? []" data-key="customerName">
@@ -123,52 +148,21 @@ function openOrders(status: OrderStatus): void {
   padding: 3rem;
 }
 
-.dashboard__kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-  gap: 0.75rem;
-}
-
-.dashboard__kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 1rem;
-  border: 1px solid var(--p-content-border-color);
-  border-radius: var(--p-border-radius, 6px);
-  background: var(--p-content-background);
-  cursor: pointer;
-  text-align: left;
-}
-
-.dashboard__kpi:hover {
-  border-color: var(--p-primary-color);
-}
-
-.dashboard__kpi-count {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--p-primary-color);
-}
-
-.dashboard__kpi-label {
-  font-size: 0.875rem;
-  color: var(--p-text-muted-color);
-}
-
 .dashboard__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
   gap: 1rem;
   align-items: start;
 }
 
-.dashboard__chart {
-  height: 18rem;
+/* Span the full row when the grid has two columns. */
+.dashboard__wide {
+  grid-column: 1 / -1;
 }
 
-.dashboard__placeholder {
-  margin: 0;
-  color: var(--p-text-muted-color);
+@media (max-width: 640px) {
+  .dashboard__grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

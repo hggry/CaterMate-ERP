@@ -13,7 +13,9 @@ public class DashboardService : IDashboardService
     {
         var ordersByStatus = await _repo.GetOrdersByStatusAsync();
         var revenueByMonth = await _repo.GetRevenueByMonthAsync();
+        var guestsByMonth = await _repo.GetGuestsByMonthAsync();
         var topCustomers = await _repo.GetTopCustomersAsync();
+        var kpis = await _repo.GetKpisAsync();
 
         return new DashboardDto
         {
@@ -23,12 +25,24 @@ public class DashboardService : IDashboardService
                 Month = r.Month,
                 TotalGross = r.TotalGross
             }).ToList(),
+            GuestsByMonth = guestsByMonth.Select(g => new GuestsByMonthDto
+            {
+                Month = g.Month,
+                Guests = g.Guests
+            }).ToList(),
             TopCustomers = topCustomers.Select(c => new TopCustomerDto
             {
                 CustomerName = c.CustomerName,
                 OrderCount = c.OrderCount,
                 TotalRevenue = c.TotalRevenue
-            }).ToList()
+            }).ToList(),
+            Kpis = new DashboardKpisDto
+            {
+                RevenueThisMonth = kpis.RevenueThisMonth,
+                RevenueThisYear = kpis.RevenueThisYear,
+                AvgOrderValue = kpis.AvgOrderValue,
+                OpenQuoteValue = kpis.OpenQuoteValue
+            }
         };
     }
 }
