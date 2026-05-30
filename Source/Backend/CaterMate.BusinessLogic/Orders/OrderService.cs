@@ -143,7 +143,11 @@ public class OrderService : IOrderService
             }
         }
 
-        if (request.AssignedMenuItemIds != null)
+        // With-counts takes priority; fall back to plain ID list if only that is provided.
+        if (request.AssignedMenuItemsWithCounts != null)
+            await _orderRepo.SetMenuItemsWithCountAsync(id, request.AssignedMenuItemsWithCounts
+                .Select(x => (x.MenuItemId, x.Count)).ToList().AsReadOnly());
+        else if (request.AssignedMenuItemIds != null)
             await _orderRepo.SetMenuItemsAsync(id, request.AssignedMenuItemIds);
 
         if (request.CustomerName != null)
@@ -237,7 +241,8 @@ public class OrderService : IOrderService
                 Id = m.Id,
                 Name = m.Name,
                 Category = m.Category,
-                SalesPricePerPerson = m.SalesPricePerPerson
+                SalesPricePerPerson = m.SalesPricePerPerson,
+                Count = m.AssignedCount
             }).ToList()
         };
 }

@@ -23,6 +23,8 @@ export interface AssignedMenuItemDto {
   name: string
   category: string
   salesPricePerPerson: number
+  // Portion count set by the AI agent; null = full guest count applies.
+  count: number | null
 }
 
 export interface OrderDto {
@@ -44,9 +46,16 @@ export interface OrderDto {
   assignedMenuItems: AssignedMenuItemDto[]
 }
 
+export interface MenuItemWithCount {
+  menuItemId: number
+  count: number | null
+}
+
 export interface UpdateOrderRequest {
   status?: OrderStatus
   assignedMenuItemIds?: number[]
+  // With-count update — takes priority over assignedMenuItemIds.
+  assignedMenuItemsWithCounts?: MenuItemWithCount[]
   customerName?: string
   customerPhone?: string
   eventDate?: string

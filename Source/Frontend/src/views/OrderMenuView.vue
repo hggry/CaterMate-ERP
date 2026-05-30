@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
 import Button from 'primevue/button'
+import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import ToggleButton from 'primevue/togglebutton'
@@ -15,6 +16,7 @@ import { useOrderStatus } from '@/composables/useOrderStatus'
 import { useOrderContext } from '@/composables/useOrderContext'
 import { apiErrorMessage } from '@/types/api'
 import type { MenuItemDto } from '@/types/menuItem'
+import type { MenuItemWithCount } from '@/types/order'
 
 const { order, orderId, reload } = useOrderContext()
 const toast = useToast()
@@ -29,15 +31,38 @@ const search = ref('')
 const categoryFilter = ref<string | null>(null)
 const hideUnsuitable = ref(false)
 
-// Editing is locked once the offer is released (mirrors OrderOverviewView).
+// Editing is locked once the offer is released.
 const locked = computed(() =>
   order.value ? indexOf(order.value.status) >= indexOf('AngebotErstellt') : false,
 )
 
 const guestCount = computed(() => order.value?.guestCount ?? 0)
+
+// Local map of menuItemId → count (null = use guestCount).
+// Initialised from the order's assignedMenuItems (which carry AI-provided counts).
+const localCounts = ref<Map<number, number | null>>(new Map())
+
+watch(
+  () => order.value?.assignedMenuItems,
+  (items) => {
+    if (!items) return
+    const next = new Map<number, number | null>()
+    for (const item of items) {
+      next.set(item.id, item.count ?? null)
+    }
+    localCounts.value = next
+  },
+  { immediate: true },
+)
+
 const assignedIds = computed(() => order.value?.assignedMenuItems.map((m) => m.id) ?? [])
 
-// Course ordering for grouping both catalog and menu card.
+function effectiveCount(menuItemId: number): number {
+  const c = localCounts.value.get(menuItemId)
+  return c != null && c > 0 ? c : guestCount.value
+}
+
+// Course ordering
 const COURSE_ORDER = ['Vorspeise', 'Hauptgang', 'Dessert', 'Beilage', 'Getränk', 'Getränk (alkoholisch)']
 function courseRank(category: string): number {
   const i = COURSE_ORDER.indexOf(category)
@@ -49,7 +74,7 @@ const categoryOptions = computed(() => {
   return cats.sort((a, b) => courseRank(a) - courseRank(b)).map((c) => ({ label: c, value: c }))
 })
 
-// Allergen tokens of the order, for the suitability check.
+// Allergen check
 const orderAllergens = computed(() =>
   (order.value?.allergies ?? '')
     .split(/[,;]+|\s+/)
@@ -59,14 +84,10 @@ const orderAllergens = computed(() =>
 
 function allergenConflict(item: MenuItemDto): boolean {
   if (!item.allergens || orderAllergens.value.length === 0) return false
-  const itemTokens = item.allergens
-    .split(/[,;]+|\s+/)
-    .map((a) => a.trim().toLowerCase())
-    .filter(Boolean)
-  return orderAllergens.value.some((a) => itemTokens.includes(a))
+  const tokens = item.allergens.split(/[,;]+|\s+/).map((a) => a.trim().toLowerCase()).filter(Boolean)
+  return orderAllergens.value.some((a) => tokens.includes(a))
 }
 
-// A single-dish menu of this item already exceeds the customer's budget.
 function overBudget(item: MenuItemDto): boolean {
   return order.value?.budget != null && item.salesPricePerPerson * guestCount.value > order.value.budget
 }
@@ -76,10 +97,10 @@ function isUnsuitable(item: MenuItemDto): boolean {
 }
 
 function unsuitableReason(item: MenuItemDto): string {
-  const reasons: string[] = []
-  if (allergenConflict(item)) reasons.push('Allergen-Konflikt')
-  if (overBudget(item)) reasons.push('über Budget')
-  return reasons.join(' · ')
+  const r: string[] = []
+  if (allergenConflict(item)) r.push('Allergen-Konflikt')
+  if (overBudget(item)) r.push('über Budget')
+  return r.join(' · ')
 }
 
 const filteredCatalog = computed(() => {
@@ -92,7 +113,6 @@ const filteredCatalog = computed(() => {
   })
 })
 
-// Catalog grouped by course for structured browsing.
 const groupedCatalog = computed(() => {
   const groups = new Map<string, MenuItemDto[]>()
   for (const item of filteredCatalog.value) {
@@ -105,7 +125,6 @@ const groupedCatalog = computed(() => {
     .map(([category, items]) => ({ category, items }))
 })
 
-// Selected items resolved against the catalog (gives purchaseCost for the margin).
 const selectedItems = computed(() =>
   (catalog.value ?? []).filter((m) => assignedIds.value.includes(m.id)),
 )
@@ -122,22 +141,28 @@ const groupedSelection = computed(() => {
     .map(([category, items]) => ({ category, items }))
 })
 
+// Live price using per-item effective count
 const netValue = computed(() =>
-  selectedItems.value.reduce((sum, m) => sum + m.salesPricePerPerson * guestCount.value, 0),
+  selectedItems.value.reduce((sum, m) => sum + m.salesPricePerPerson * effectiveCount(m.id), 0),
 )
 const contributionMargin = computed(() =>
   selectedItems.value.reduce(
-    (sum, m) => sum + (m.salesPricePerPerson - m.purchaseCostPerPerson) * guestCount.value,
+    (sum, m) => sum + (m.salesPricePerPerson - m.purchaseCostPerPerson) * effectiveCount(m.id),
     0,
   ),
 )
 const budget = computed(() => order.value?.budget ?? null)
 const budgetDelta = computed(() => (budget.value != null ? budget.value - netValue.value : null))
 
-async function setMenuItems(ids: number[]): Promise<void> {
+// Build the payload with current local counts
+function buildCountPayload(ids: number[]): MenuItemWithCount[] {
+  return ids.map((id) => ({ menuItemId: id, count: localCounts.value.get(id) ?? null }))
+}
+
+async function persist(ids: number[]): Promise<void> {
   menuBusy.value = true
   try {
-    await ordersApi.update(orderId, { assignedMenuItemIds: ids })
+    await ordersApi.update(orderId, { assignedMenuItemsWithCounts: buildCountPayload(ids) })
     await reload()
   } catch (e) {
     toast.error(apiErrorMessage(e))
@@ -148,10 +173,22 @@ async function setMenuItems(ids: number[]): Promise<void> {
 
 function toggle(id: number): void {
   if (locked.value || menuBusy.value) return
-  const ids = assignedIds.value.includes(id)
-    ? assignedIds.value.filter((x) => x !== id)
-    : [...assignedIds.value, id]
-  void setMenuItems(ids)
+  const current = assignedIds.value
+  if (current.includes(id)) {
+    localCounts.value.delete(id)
+    void persist(current.filter((x) => x !== id))
+  } else {
+    // New items default to null → guestCount will be used
+    localCounts.value.set(id, null)
+    void persist([...current, id])
+  }
+}
+
+async function updateCount(id: number, rawValue: number | null): Promise<void> {
+  if (locked.value || menuBusy.value) return
+  // null or 0 means "use full guest count"
+  localCounts.value.set(id, rawValue && rawValue > 0 ? rawValue : null)
+  await persist(assignedIds.value)
 }
 
 watch(categoryOptions, () => {
@@ -245,7 +282,25 @@ watch(categoryOptions, () => {
             <div class="menu-view__menu-course">{{ group.category }}</div>
             <div v-for="item in group.items" :key="item.id" class="menu-view__menu-item">
               <span class="menu-view__menu-name">{{ item.name }}</span>
-              <span class="menu-view__menu-price">{{ formatCurrency(item.salesPricePerPerson) }}</span>
+              <span class="menu-view__menu-count-wrap">
+                <InputNumber
+                  v-if="!locked"
+                  :model-value="localCounts.get(item.id) ?? guestCount"
+                  :min="1"
+                  :max="9999"
+                  :use-grouping="false"
+                  class="menu-view__count-input"
+                  :disabled="menuBusy"
+                  @update:model-value="(v) => updateCount(item.id, v)"
+                />
+                <span v-else class="menu-view__count-readonly">
+                  {{ localCounts.get(item.id) ?? guestCount }}
+                </span>
+                <span class="menu-view__count-label">Pers.</span>
+              </span>
+              <span class="menu-view__menu-price">
+                {{ formatCurrency(item.salesPricePerPerson * effectiveCount(item.id)) }}
+              </span>
               <Button
                 v-if="!locked"
                 icon="pi pi-times"
@@ -261,8 +316,12 @@ watch(categoryOptions, () => {
         </div>
 
         <div class="menu-view__calc">
+          <div class="menu-view__calc-row menu-view__calc-row--hint">
+            <span>Basis Personenzahl</span>
+            <span>{{ guestCount }} Pers.</span>
+          </div>
           <div class="menu-view__calc-row">
-            <span>Warenwert netto · {{ guestCount }} Pers.</span>
+            <span>Warenwert netto</span>
             <span>{{ formatCurrency(netValue) }}</span>
           </div>
           <div v-if="budget != null" class="menu-view__calc-row">
@@ -278,7 +337,6 @@ watch(categoryOptions, () => {
             <span>{{ formatCurrency(budgetDelta) }}</span>
           </div>
           <p class="menu-view__hint">zzgl. Verwaltungspauschale &amp; USt im Angebot</p>
-
           <div class="menu-view__calc-row menu-view__calc-row--margin">
             <span>Deckungsbeitrag (intern)</span>
             <span>{{ formatCurrency(contributionMargin) }}</span>
@@ -298,18 +356,18 @@ watch(categoryOptions, () => {
 
 .menu-view__grid {
   display: grid;
-  grid-template-columns: 1fr 22rem;
+  grid-template-columns: 1fr 24rem;
   gap: 1.5rem;
   align-items: start;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .menu-view__grid {
     grid-template-columns: 1fr;
   }
 }
 
-/* Catalog — flows with the page; no nested scrollbar. */
+/* Catalog */
 .menu-view__filters {
   display: grid;
   grid-template-columns: 1fr 12rem auto;
@@ -414,7 +472,7 @@ watch(categoryOptions, () => {
   font-size: 0.875rem;
 }
 
-/* Menu card — sticky so the running total stays visible while browsing. */
+/* Menu card */
 .menu-view__card {
   position: sticky;
   top: 1rem;
@@ -461,21 +519,54 @@ watch(categoryOptions, () => {
 
 .menu-view__menu-item {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  /* name | count-widget | total-price | remove */
+  grid-template-columns: 1fr auto auto auto;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.25rem 0;
 }
 
 .menu-view__menu-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.875rem;
+}
+
+.menu-view__menu-count-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.menu-view__count-input {
+  width: 4.5rem;
+}
+
+/* Style the inner input of PrimeVue InputNumber to be compact */
+.menu-view__count-input :deep(.p-inputnumber-input) {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+.menu-view__count-readonly {
+  font-size: 0.875rem;
+  min-width: 2rem;
+  text-align: right;
+}
+
+.menu-view__count-label {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
 }
 
 .menu-view__menu-price {
   font-variant-numeric: tabular-nums;
-  color: var(--p-text-muted-color);
   font-size: 0.875rem;
+  text-align: right;
+  min-width: 4rem;
 }
 
 .menu-view__calc {
@@ -488,6 +579,12 @@ watch(categoryOptions, () => {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.2rem 0;
+}
+
+.menu-view__calc-row--hint {
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+  padding-bottom: 0.5rem;
 }
 
 .menu-view__calc-row--delta {

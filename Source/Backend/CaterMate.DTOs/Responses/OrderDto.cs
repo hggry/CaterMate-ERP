@@ -26,4 +26,6 @@ public class AssignedMenuItemDto
     public string Name { get; set; } = "";
     public string Category { get; set; } = "";
     public decimal SalesPricePerPerson { get; set; }
+    // Portion count set by the AI agent; null = full guest count applies.
+    public int? Count { get; set; }
 }
