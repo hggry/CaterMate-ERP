@@ -208,6 +208,7 @@ async function downloadPdf(): Promise<void> {
       header="Angebot versenden"
       modal
       :style="{ width: '28rem' }"
+      :breakpoints="{ '767px': '95vw' }"
     >
       <p class="quote-view__dialog-text">
         Das Angebot wurde erstellt. Möchten Sie es jetzt an den Kunden senden?
@@ -278,5 +279,17 @@ async function downloadPdf(): Promise<void> {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+/* Phone: full-width summary and action buttons. */
+@media (max-width: 767.98px) {
+  .quote-view__summary {
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .quote-view__actions :deep(.p-button) {
+    flex: 1 1 12rem;
+  }
 }
 </style>

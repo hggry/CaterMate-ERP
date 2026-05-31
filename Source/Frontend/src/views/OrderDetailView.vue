@@ -341,6 +341,14 @@ function tabEnabled(tab: TabDef): boolean {
   display: flex;
   gap: 0.25rem;
   border-bottom: 1px solid var(--p-content-border-color);
+  /* Tabs are a strip: let them scroll horizontally instead of wrapping on
+     narrow screens. On desktop the five tabs fit, so nothing changes. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.order-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .order-tabs__tab {
@@ -348,6 +356,8 @@ function tabEnabled(tab: TabDef): boolean {
   text-decoration: none;
   color: var(--p-text-color);
   border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .order-tabs__tab--active {
@@ -360,5 +370,21 @@ function tabEnabled(tab: TabDef): boolean {
   color: var(--p-text-muted-color);
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Phone: stacked header with full-width action buttons for easy tapping. */
+@media (max-width: 767.98px) {
+  .order-detail__header {
+    align-items: stretch;
+  }
+
+  .order-detail__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .order-detail__actions :deep(.p-button) {
+    flex: 1 1 8rem;
+  }
 }
 </style>

@@ -233,4 +233,16 @@ async function downloadPdf(): Promise<void> {
   display: flex;
   justify-content: flex-end;
 }
+
+/* Phone: full-width summary, tighter meta. */
+@media (max-width: 767.98px) {
+  .invoice-view__summary {
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .invoice-view__meta {
+    gap: 1rem;
+  }
+}
 </style>

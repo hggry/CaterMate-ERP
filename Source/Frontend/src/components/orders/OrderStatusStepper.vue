@@ -110,8 +110,8 @@ function stateOf(index: number): 'done' | 'active' | 'upcoming' {
 }
 
 /* Narrow layout: switch to a vertical stepper with a connecting line that
-   runs down from each marker to the next. */
-@media (max-width: 640px) {
+   runs down from each marker to the next. Aligned to the phone tier (768px). */
+@media (max-width: 767.98px) {
   .stepper {
     flex-direction: column;
     flex-wrap: nowrap;

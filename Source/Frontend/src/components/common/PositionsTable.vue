@@ -18,7 +18,7 @@ function vatPercent(rate: number): string {
 </script>
 
 <template>
-  <DataTable :value="positions" data-key="menuItemId">
+  <DataTable :value="positions" data-key="menuItemId" class="positions-table">
     <template #empty>Keine Positionen.</template>
     <Column field="menuItemName" header="Gericht" />
     <Column header="Menge" style="width: 9rem">
@@ -49,10 +49,10 @@ function vatPercent(rate: number): string {
     <Column header="Netto">
       <template #body="{ data }">{{ formatCurrency(data.totalNet) }}</template>
     </Column>
-    <Column header="USt.-Satz" style="width: 7rem">
+    <Column header="USt.-Satz" style="width: 7rem" header-class="col-optional" body-class="col-optional">
       <template #body="{ data }">{{ vatPercent(data.vatRate) }}</template>
     </Column>
-    <Column header="USt.">
+    <Column header="USt." header-class="col-optional" body-class="col-optional">
       <template #body="{ data }">{{ formatCurrency(data.vatAmount) }}</template>
     </Column>
     <Column header="Brutto">
@@ -60,3 +60,17 @@ function vatPercent(rate: number): string {
     </Column>
   </DataTable>
 </template>
+
+<style scoped>
+/* Let the table scroll horizontally rather than break the layout on phones. */
+.positions-table {
+  overflow-x: auto;
+}
+
+/* Phone: hide the VAT rate and VAT amount columns to reduce width. */
+@media (max-width: 767.98px) {
+  .positions-table :deep(.col-optional) {
+    display: none;
+  }
+}
+</style>

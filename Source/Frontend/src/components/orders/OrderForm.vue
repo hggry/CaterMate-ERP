@@ -157,6 +157,13 @@ defineProps<{
   gap: 0.875rem;
 }
 
+/* Phone: stack paired fields into a single column. */
+@media (max-width: 767.98px) {
+  .order-form__row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .order-form__field {
   display: flex;
   flex-direction: column;
