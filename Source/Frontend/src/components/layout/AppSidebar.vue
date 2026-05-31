@@ -20,6 +20,9 @@ const auth = useAuthStore()
 const suggestions = useSuggestionsStore()
 const theme = useThemeStore()
 
+// Emitted when a nav link is tapped so the parent can close the mobile drawer.
+const emit = defineEmits<{ navigate: [] }>()
+
 const navItems: NavItem[] = [
   { label: 'Dashboard', icon: 'pi pi-chart-bar', to: { name: 'dashboard' } },
   { label: 'Aufträge', icon: 'pi pi-list', to: { name: 'orders' } },
@@ -53,6 +56,7 @@ function logout(): void {
         :to="item.to"
         class="app-sidebar__link"
         active-class="app-sidebar__link--active"
+        @click="emit('navigate')"
       >
         <i :class="item.icon" />
         <span class="app-sidebar__label">{{ item.label }}</span>
@@ -260,43 +264,5 @@ function logout(): void {
 
 .app-sidebar__theme-toggle:hover .app-sidebar__toggle-track {
   opacity: 0.85;
-}
-
-@media (max-width: 48rem) {
-  .app-sidebar {
-    width: 100%;
-    height: auto;
-    max-height: 45vh;
-    max-height: 45dvh;
-    padding: 0.75rem;
-    border-right: 0;
-    border-bottom: 1px solid var(--p-content-border-color);
-  }
-
-  .app-sidebar__brand {
-    margin-bottom: 0.5rem;
-  }
-
-  .app-sidebar__nav {
-    flex: 0 1 auto;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 0.25rem;
-  }
-
-  .app-sidebar__link {
-    flex: 0 0 auto;
-  }
-
-  .app-sidebar__footer {
-    flex-direction: row;
-    align-items: center;
-    padding-top: 0.75rem;
-  }
-
-  .app-sidebar__footer :deep(.p-button) {
-    width: auto;
-  }
 }
 </style>
