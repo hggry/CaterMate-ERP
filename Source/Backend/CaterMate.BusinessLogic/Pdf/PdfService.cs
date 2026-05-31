@@ -300,9 +300,9 @@ public class PdfService : IPdfService
                                 // Visual gap before every group except the first.
                                 if (headerShown)
                                     table.Cell().ColumnSpan(6).Height(10).Background(White);
-                                table.Cell().ColumnSpan(6).Background(primary)
-                                    .PaddingVertical(7).PaddingHorizontal(8)
-                                    .Text(CourseLabel(group.Key)).Bold().FontSize(9).FontColor(White);
+                                table.Cell().ColumnSpan(6).Background(AltRow)
+                                    .PaddingVertical(6).PaddingHorizontal(8)
+                                    .Text(CourseLabel(group.Key)).Bold().FontSize(9).FontColor(primary);
                                 headerShown = true;
                             }
                             foreach (var pos in group)
@@ -394,9 +394,9 @@ public class PdfService : IPdfService
                                 // Visual gap before every group except the first.
                                 if (headerShown)
                                     table.Cell().ColumnSpan(6).Height(10).Background(White);
-                                table.Cell().ColumnSpan(6).Background(primary)
-                                    .PaddingVertical(7).PaddingHorizontal(8)
-                                    .Text(CourseLabel(group.Key)).Bold().FontSize(9).FontColor(White);
+                                table.Cell().ColumnSpan(6).Background(AltRow)
+                                    .PaddingVertical(6).PaddingHorizontal(8)
+                                    .Text(CourseLabel(group.Key)).Bold().FontSize(9).FontColor(primary);
                                 headerShown = true;
                             }
                             foreach (var pos in group)
