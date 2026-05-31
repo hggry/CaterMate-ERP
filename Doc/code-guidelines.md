@@ -137,6 +137,92 @@ PrimeVue-Komponenten werden bevorzugt gegenüber eigenen UI-Elementen. Eigene St
 
 ---
 
+### Responsive Design
+
+CaterMate ERP ist für drei Geräteklassen ausgelegt. Das Desktop-Design (≥ 1024 px) gilt als Referenz und darf nicht durch mobile Anpassungen verändert werden — alle responsiven Regeln liegen ausschließlich in `max-width`-Media-Queries.
+
+#### Breakpoint-System
+
+| Tier | Bereich | Verwendung |
+|---|---|---|
+| **Phone** | `< 768 px` | Karten statt Tabellen, Hamburger-Drawer, Single-Column-Layouts |
+| **Tablet** | `768 px – 1023 px` | Reduzierte Tabellenspalten, Drawer-Navigation, 2-Spalten-Grids |
+| **Desktop** | `≥ 1024 px` | Vollständiges Layout — unverändert |
+
+**Konvention:** `max-width` immer mit `0.02 px` Offset schreiben, um Überlapp genau an Breakpoints zu verhindern.
+
+```css
+/* Phone */
+@media (max-width: 767.98px) { … }
+
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1023.98px) { … }
+```
+
+#### `useBreakpoint` Composable
+
+Einheitliche, matchMedia-basierte reaktive Refs für alle Komponenten:
+
+```ts
+import { useBreakpoint } from '@/composables/useBreakpoint'
+
+const { isPhone, isTablet, isDesktop, isCompactNav } = useBreakpoint()
+```
+
+| Ref | True wenn |
+|---|---|
+| `isPhone` | Viewport `< 768 px` |
+| `isTablet` | `768 px ≤` Viewport `< 1024 px` |
+| `isDesktop` | Viewport `≥ 1024 px` |
+| `isCompactNav` | Viewport `< 1024 px` (steuert Hamburger-Drawer) |
+
+`useBreakpoint` ist der **einzige erlaubte Weg**, um in Script-Logik auf die aktuelle Geräteklasse zu reagieren. Kein direktes `window.innerWidth` im Code.
+
+#### Navigations-Muster
+
+- **Desktop (≥ 1024 px):** Persistente Sidebar links (18 rem breit)
+- **Tablet & Phone (< 1024 px):** Schlanker Top-Bar (3,5 rem) mit Hamburger-Button; Sidebar öffnet als Off-Canvas-Drawer mit Scrim. Drawer schließt automatisch bei Navigation und beim Vergrößern des Fensters auf Desktop.
+
+Implementierung: `AppLayout.vue` (Drawer-Logik + Scrim) und `AppSidebar.vue` (emit `navigate` bei Link-Klick).
+
+#### Listen-Muster: Tabellen vs. Karten
+
+Auf **Phone** werden PrimeVue-DataTables durch tippbare Karten ersetzt:
+
+```vue
+<template v-if="isPhone">
+  <!-- Karten-Layout -->
+  <ul class="…-cards">
+    <li v-for="item in items" class="…-card" @click="openDetail(item.id)">
+      …
+    </li>
+  </ul>
+</template>
+<DataTable v-else … />
+```
+
+**Welche Views verwenden Karten:**
+- `OrdersTable.vue` — Aufträge (auch im Archiv)
+- `MenuItemsView.vue` — Menüartikel
+- `IngredientsView.vue` — Zutaten
+
+**Welche Views verwenden horizontales Scroll (kein Karten-Metapher):**
+- `IncomingInvoiceView.vue` — Eingangsrechnungen (zu viele Aktions-Spalten)
+- `PriceSuggestionsView.vue` — Preisvorschläge (Workflow-View, kein reines Listing)
+
+#### PrimeVue Dialoge
+
+Alle Dialoge müssen `:breakpoints` setzen, damit sie auf Phones nicht überlaufen:
+
+```vue
+<Dialog
+  :style="{ width: '40rem' }"
+  :breakpoints="{ '767px': '95vw' }"
+/>
+```
+
+---
+
 ## API-Design
 
 Ressourcennamen: **Plural, Englisch** (`/api/orders`, `/api/menu-items`)
