@@ -14,6 +14,7 @@ export interface CompanySettingsDto {
   bankName: string | null
   commercialRegNo: string | null
   commercialCourt: string | null
+  accentColor: string | null
   hasLogo: boolean
 }
 
@@ -33,4 +34,5 @@ export interface UpdateCompanySettingsRequest {
   bankName?: string
   commercialRegNo?: string
   commercialCourt?: string
+  accentColor?: string
 }

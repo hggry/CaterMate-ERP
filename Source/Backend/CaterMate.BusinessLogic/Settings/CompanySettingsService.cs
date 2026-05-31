@@ -40,6 +40,7 @@ public class CompanySettingsService : ICompanySettingsService
             BankName        = request.BankName?.Trim(),
             CommercialRegNo = request.CommercialRegNo?.Trim(),
             CommercialCourt = request.CommercialCourt?.Trim(),
+            AccentColor     = request.AccentColor?.Trim(),
             // Preserve existing logo path.
             LogoPath        = existing?.LogoPath,
         };
@@ -98,6 +99,7 @@ public class CompanySettingsService : ICompanySettingsService
         BankName        = e.BankName,
         CommercialRegNo = e.CommercialRegNo,
         CommercialCourt = e.CommercialCourt,
+        AccentColor     = e.AccentColor,
         HasLogo         = e.LogoPath != null && File.Exists(e.LogoPath),
     };
 }

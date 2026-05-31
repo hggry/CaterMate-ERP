@@ -12,10 +12,10 @@ public class CompanySettingsRepository : ICompanySettingsRepository
     private const string Upsert = @"
         INSERT INTO CompanySettings
             (Id, CompanyName, Street, PostalCode, City, Country, Phone, Email, Website,
-             VatId, TaxNumber, Iban, Bic, BankName, CommercialRegNo, CommercialCourt)
+             VatId, TaxNumber, Iban, Bic, BankName, CommercialRegNo, CommercialCourt, AccentColor)
         VALUES
             (1, @CompanyName, @Street, @PostalCode, @City, @Country, @Phone, @Email, @Website,
-             @VatId, @TaxNumber, @Iban, @Bic, @BankName, @CommercialRegNo, @CommercialCourt)
+             @VatId, @TaxNumber, @Iban, @Bic, @BankName, @CommercialRegNo, @CommercialCourt, @AccentColor)
         ON DUPLICATE KEY UPDATE
             CompanyName     = VALUES(CompanyName),
             Street          = VALUES(Street),
@@ -31,7 +31,8 @@ public class CompanySettingsRepository : ICompanySettingsRepository
             Bic             = VALUES(Bic),
             BankName        = VALUES(BankName),
             CommercialRegNo = VALUES(CommercialRegNo),
-            CommercialCourt = VALUES(CommercialCourt)";
+            CommercialCourt = VALUES(CommercialCourt),
+            AccentColor     = VALUES(AccentColor)";
 
     private const string UpdateLogo = "UPDATE CompanySettings SET LogoPath = @Path WHERE Id = 1";
 

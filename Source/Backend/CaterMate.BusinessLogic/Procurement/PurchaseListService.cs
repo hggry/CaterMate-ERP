@@ -49,9 +49,10 @@ public class PurchaseListService : IPurchaseListService
         var aggregated = new Dictionary<int, decimal>();
         foreach (var item in menuItems)
         {
+            var effectiveCount = item.AssignedCount ?? order.GuestCount;
             var bom = await _menuItemRepo.GetBillOfMaterialsAsync(item.Id);
             foreach (var entry in bom)
-                aggregated[entry.IngredientId] = aggregated.GetValueOrDefault(entry.IngredientId) + entry.QuantityPerPerson;
+                aggregated[entry.IngredientId] = aggregated.GetValueOrDefault(entry.IngredientId) + entry.QuantityPerPerson * effectiveCount;
         }
 
         var listEntity = new PurchaseListEntity
@@ -69,7 +70,7 @@ public class PurchaseListService : IPurchaseListService
                 {
                     IngredientId = kv.Key,
                     IngredientName = ingredient.Name,
-                    RequiredQuantity = kv.Value * order.GuestCount * (1 + SafetyMargin),
+                    RequiredQuantity = kv.Value * (1 + SafetyMargin),
                     Unit = ingredient.Unit,
                     Category = ingredient.Category ?? "",
                     IsDone = false

@@ -225,6 +225,7 @@ CREATE TABLE CompanySettings (
     CommercialRegNo VARCHAR(100)   NULL,
     CommercialCourt VARCHAR(200)   NULL,
     LogoPath        VARCHAR(500)   NULL,
+    AccentColor     VARCHAR(7)     NULL,
     UpdatedAt       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -8,8 +8,9 @@ namespace CaterMate.BusinessLogic.Pdf;
 
 /// <summary>
 /// Generates all customer-facing and internal PDFs.
-/// Brand colours: Avocado #7AAA28 (primary), Espresso #3E2818 (text),
+/// Brand colours: Avocado #7AAA28 (primary fallback), Espresso #3E2818 (text),
 /// Sand #F5F5F5 (alternate row), White #FFFFFF.
+/// The primary colour can be overridden per-company via CompanySettingsDto.AccentColor.
 /// </summary>
 public class PdfService : IPdfService
 {
@@ -22,8 +23,12 @@ public class PdfService : IPdfService
     private static string Qty(decimal v) => v.ToString("N2", De);
 
     // ── Brand colours ────────────────────────────────────────────────────────
-    private static readonly Color Primary  = Color.FromHex("#7AAA28");
-    private static readonly Color DarkText = Color.FromHex("#3E2818");
+    private static readonly Color DefaultPrimary = Color.FromHex("#7AAA28");
+    private static readonly Color DarkText       = Color.FromHex("#3E2818");
+
+    // Returns the company's accent colour, falling back to the CaterMate default.
+    private static Color GetPrimary(CompanySettingsDto c) =>
+        string.IsNullOrWhiteSpace(c.AccentColor) ? DefaultPrimary : Color.FromHex(c.AccentColor);
     private static readonly Color AltRow   = Color.FromHex("#F5F5F5");
     private static readonly Color White    = Colors.White;
     private static readonly Color LightGray = Color.FromHex("#E8E8E8");
@@ -77,15 +82,15 @@ public class PdfService : IPdfService
 
         // Accent line under header
         col.Item().PaddingTop(6).PaddingBottom(8)
-            .LineHorizontal(1.5f).LineColor(Primary);
+            .LineHorizontal(1.5f).LineColor(GetPrimary(c));
     }
 
     /// Renders a styled document title row with number/date info on the right.
-    private static void AddDocumentTitleBar(ColumnDescriptor col, string title, string infoLeft, string infoRight)
+    private static void AddDocumentTitleBar(ColumnDescriptor col, string title, string infoLeft, string infoRight, Color primary)
     {
         col.Item().PaddingBottom(12).Row(row =>
         {
-            row.RelativeItem().Text(title).Bold().FontSize(20).FontColor(Primary);
+            row.RelativeItem().Text(title).Bold().FontSize(20).FontColor(primary);
             row.RelativeItem().AlignRight().Column(c =>
             {
                 c.Item().Text(infoLeft).FontSize(9).FontColor(DarkText);
@@ -95,13 +100,13 @@ public class PdfService : IPdfService
     }
 
     /// Renders a standard positions table header.
-    private static void AddTableHeader(TableDescriptor table)
+    private static void AddTableHeader(TableDescriptor table, Color primary)
     {
         table.Header(h =>
         {
             void HeaderCell(string text, bool alignRight = false)
             {
-                var cell = h.Cell().Background(Primary).Padding(5);
+                var cell = h.Cell().Background(primary).Padding(5);
                 var txt = cell.Text(text).Bold().FontColor(White).FontSize(9);
                 if (alignRight) txt.AlignRight();
             }
@@ -135,7 +140,7 @@ public class PdfService : IPdfService
     }
 
     /// Renders the totals summary block (right-aligned, with thousands separators).
-    private static void AddTotalsSummary(ColumnDescriptor col, decimal net, decimal vat, decimal gross)
+    private static void AddTotalsSummary(ColumnDescriptor col, decimal net, decimal vat, decimal gross, Color primary)
     {
         col.Item().PaddingTop(10).AlignRight().Width(260).Column(totals =>
         {
@@ -150,11 +155,11 @@ public class PdfService : IPdfService
                 r.ConstantItem(100).Text(Eur(vat)).AlignRight().FontSize(9).FontColor(DarkText);
             });
             totals.Item().PaddingTop(4)
-                .LineHorizontal(1).LineColor(Primary);
+                .LineHorizontal(1).LineColor(primary);
             totals.Item().PaddingTop(4).Row(r =>
             {
-                r.RelativeItem().Text("Brutto gesamt").Bold().FontSize(11).FontColor(Primary);
-                r.ConstantItem(100).Text(Eur(gross)).AlignRight().Bold().FontSize(11).FontColor(Primary);
+                r.RelativeItem().Text("Brutto gesamt").Bold().FontSize(11).FontColor(primary);
+                r.ConstantItem(100).Text(Eur(gross)).AlignRight().Bold().FontSize(11).FontColor(primary);
             });
         });
     }
@@ -165,7 +170,7 @@ public class PdfService : IPdfService
         if (string.IsNullOrWhiteSpace(c.Iban)) return;
         col.Item().PaddingTop(14).Border(1).BorderColor(LightGray).Padding(10).Column(box =>
         {
-            box.Item().Text("Zahlungsinformationen").Bold().FontSize(9).FontColor(Primary);
+            box.Item().Text("Zahlungsinformationen").Bold().FontSize(9).FontColor(GetPrimary(c));
             box.Item().PaddingTop(4).Text(paymentNote).FontSize(9).FontColor(DarkText);
             if (!string.IsNullOrWhiteSpace(c.Iban))
                 box.Item().Text($"IBAN: {c.Iban}").FontSize(9).FontColor(DarkText);
@@ -213,6 +218,7 @@ public class PdfService : IPdfService
     public byte[] GenerateQuotePdf(QuoteDto quote, string customerName, DateTime eventDate, CompanySettingsDto company)
     {
         var logo = GetLogoBytes(company);
+        var primary = GetPrimary(company);
         return Document.Create(container =>
         {
             container.Page(page =>
@@ -231,7 +237,7 @@ public class PdfService : IPdfService
                     // Document title + meta
                     AddDocumentTitleBar(col, "Angebot",
                         $"Angebotsnummer: A-{quote.Id:D5}",
-                        $"Erstellt am: {quote.CreatedAt:dd.MM.yyyy}");
+                        $"Erstellt am: {quote.CreatedAt:dd.MM.yyyy}", primary);
 
                     // Recipient block
                     col.Item().PaddingBottom(10).Row(row =>
@@ -257,7 +263,7 @@ public class PdfService : IPdfService
                             cols.RelativeColumn(1.5f);
                             cols.RelativeColumn(2);
                         });
-                        AddTableHeader(table);
+                        AddTableHeader(table, primary);
 
                         var rowIndex = 0;
                         foreach (var pos in quote.Positions)
@@ -277,7 +283,7 @@ public class PdfService : IPdfService
                         table.Cell().Background(bg).Padding(4);
                     });
 
-                    AddTotalsSummary(col, quote.TotalNet, quote.TotalVat, quote.TotalGross);
+                    AddTotalsSummary(col, quote.TotalNet, quote.TotalVat, quote.TotalGross, primary);
 
                     // Offer validity note
                     col.Item().PaddingTop(12).Text(
@@ -295,6 +301,7 @@ public class PdfService : IPdfService
     public byte[] GenerateInvoicePdf(InvoiceDto invoice, CompanySettingsDto company)
     {
         var logo = GetLogoBytes(company);
+        var primary = GetPrimary(company);
         return Document.Create(container =>
         {
             container.Page(page =>
@@ -312,7 +319,7 @@ public class PdfService : IPdfService
                 {
                     AddDocumentTitleBar(col, "Rechnung",
                         $"Rechnungsnummer: {invoice.InvoiceNumber}",
-                        $"Datum: {invoice.IssueDate:dd.MM.yyyy}  ·  Fällig: {invoice.DueDate:dd.MM.yyyy}");
+                        $"Datum: {invoice.IssueDate:dd.MM.yyyy}  ·  Fällig: {invoice.DueDate:dd.MM.yyyy}", primary);
 
                     // Recipient
                     col.Item().PaddingBottom(10).Column(r =>
@@ -333,7 +340,7 @@ public class PdfService : IPdfService
                             cols.RelativeColumn(1.5f);
                             cols.RelativeColumn(2);
                         });
-                        AddTableHeader(table);
+                        AddTableHeader(table, primary);
 
                         var rowIndex = 0;
                         foreach (var pos in invoice.Positions)
@@ -344,7 +351,7 @@ public class PdfService : IPdfService
                         }
                     });
 
-                    AddTotalsSummary(col, invoice.TotalNet, invoice.TotalVat, invoice.TotalGross);
+                    AddTotalsSummary(col, invoice.TotalNet, invoice.TotalVat, invoice.TotalGross, primary);
 
                     AddPaymentBox(col, company,
                         $"Bitte überweisen Sie {invoice.TotalGross:F2} € bis {invoice.DueDate:dd.MM.yyyy}.");
@@ -358,6 +365,7 @@ public class PdfService : IPdfService
     public byte[] GeneratePurchaseListPdf(PurchaseListDto purchaseList, int guestCount, CompanySettingsDto company)
     {
         var logo = GetLogoBytes(company);
+        var primary = GetPrimary(company);
         return Document.Create(container =>
         {
             container.Page(page =>
@@ -375,12 +383,12 @@ public class PdfService : IPdfService
                 {
                     AddDocumentTitleBar(col, "Einkaufsliste",
                         $"Auftrag #{purchaseList.OrderId}  ·  {guestCount} Personen",
-                        $"Sicherheitsaufschlag: {purchaseList.SafetyMargin * 100:F0}%");
+                        $"Sicherheitsaufschlag: {purchaseList.SafetyMargin * 100:F0}%", primary);
 
                     foreach (var group in purchaseList.Groups)
                     {
                         // Category header bar
-                        col.Item().PaddingTop(10).Background(Primary).Padding(5)
+                        col.Item().PaddingTop(10).Background(primary).Padding(5)
                             .Text(group.Category).Bold().FontSize(10).FontColor(White);
 
                         col.Item().Table(table =>

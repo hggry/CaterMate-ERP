@@ -17,6 +17,7 @@ public class CompanySettingsDto
     public string? BankName { get; set; }
     public string? CommercialRegNo { get; set; }
     public string? CommercialCourt { get; set; }
+    public string? AccentColor { get; set; }
     // Null when no logo has been uploaded yet.
     public bool HasLogo { get; set; }
 }

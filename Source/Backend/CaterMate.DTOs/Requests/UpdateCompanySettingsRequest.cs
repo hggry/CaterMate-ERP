@@ -12,7 +12,6 @@ public class UpdateCompanySettingsRequest
     public string? City { get; set; }
     public string? Country { get; set; }
     public string? Phone { get; set; }
-    [EmailAddress]
     public string? Email { get; set; }
     public string? Website { get; set; }
     public string? VatId { get; set; }
@@ -22,4 +21,6 @@ public class UpdateCompanySettingsRequest
     public string? BankName { get; set; }
     public string? CommercialRegNo { get; set; }
     public string? CommercialCourt { get; set; }
+    [RegularExpression(@"^#[0-9A-Fa-f]{6}$", ErrorMessage = "Akzentfarbe muss ein gültiger Hex-Farbwert sein (z. B. #7AAA28).")]
+    public string? AccentColor { get; set; }
 }

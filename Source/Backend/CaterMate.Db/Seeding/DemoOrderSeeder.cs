@@ -105,6 +105,7 @@ public static class DemoOrderSeeder
             Quantity = VALUES(Quantity),
             UnitPrice = VALUES(UnitPrice),
             TotalNet = VALUES(TotalNet),
+            VatRate = VALUES(VatRate),
             VatAmount = VALUES(VatAmount),
             TotalGross = VALUES(TotalGross)
         """,
@@ -263,6 +264,7 @@ public static class DemoOrderSeeder
             Quantity = VALUES(Quantity),
             UnitPrice = VALUES(UnitPrice),
             TotalNet = VALUES(TotalNet),
+            VatRate = VALUES(VatRate),
             VatAmount = VALUES(VatAmount),
             TotalGross = VALUES(TotalGross)
         """,

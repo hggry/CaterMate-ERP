@@ -19,5 +19,6 @@ public class CompanySettingsEntity
     public string? CommercialRegNo { get; set; }
     public string? CommercialCourt { get; set; }
     public string? LogoPath { get; set; }
+    public string? AccentColor { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

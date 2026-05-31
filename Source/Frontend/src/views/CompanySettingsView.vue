@@ -17,6 +17,8 @@ const uploading = ref(false)
 const hasLogo = ref(false)
 const logoKey = ref(0) // bump to force <img> reload
 
+const DefaultAccentColor = '#7AAA28'
+
 const form = reactive<UpdateCompanySettingsRequest>({
   companyName: '',
   street: '',
@@ -33,6 +35,7 @@ const form = reactive<UpdateCompanySettingsRequest>({
   bankName: '',
   commercialRegNo: '',
   commercialCourt: '',
+  accentColor: DefaultAccentColor,
 })
 
 onMounted(async () => {
@@ -54,6 +57,7 @@ onMounted(async () => {
       bankName:        dto.bankName        ?? '',
       commercialRegNo: dto.commercialRegNo ?? '',
       commercialCourt: dto.commercialCourt ?? '',
+      accentColor:     dto.accentColor     ?? DefaultAccentColor,
     })
     hasLogo.value = dto.hasLogo
   } catch (e) {
@@ -102,7 +106,16 @@ function triggerLogoInput(): void {
 
 <template>
   <div class="settings">
-    <h1>Unternehmenseinstellungen</h1>
+    <div class="settings__header">
+      <h1>Unternehmenseinstellungen</h1>
+      <Button
+        v-if="!loading"
+        label="Änderungen speichern"
+        icon="pi pi-save"
+        :loading="saving"
+        @click="save"
+      />
+    </div>
 
     <div v-if="loading" class="settings__center">
       <ProgressSpinner style="width: 3rem; height: 3rem" />
@@ -200,6 +213,37 @@ function triggerLogoInput(): void {
           </div>
         </Panel>
 
+        <!-- Design -->
+        <Panel header="Design (PDF)">
+          <div class="settings__fields">
+            <div class="settings__field settings__field--full">
+              <label>Akzentfarbe</label>
+              <div class="settings__color-row">
+                <input
+                  type="color"
+                  v-model="form.accentColor"
+                  class="settings__color-swatch"
+                />
+                <InputText
+                  v-model="form.accentColor"
+                  fluid
+                  placeholder="#7AAA28"
+                  maxlength="7"
+                  class="settings__color-hex"
+                />
+                <Button
+                  icon="pi pi-refresh"
+                  severity="secondary"
+                  text
+                  v-tooltip="'CaterMate-Standard zurücksetzen'"
+                  @click="form.accentColor = DefaultAccentColor"
+                />
+              </div>
+              <small class="settings__logo-hint">Wird als Primärfarbe in Angebots- und Rechnungs-PDFs verwendet.</small>
+            </div>
+          </div>
+        </Panel>
+
         <!-- Logo -->
         <Panel header="Firmenlogo">
           <div class="settings__logo">
@@ -236,15 +280,6 @@ function triggerLogoInput(): void {
         </Panel>
       </div>
 
-      <!-- Save button -->
-      <div class="settings__actions">
-        <Button
-          label="Änderungen speichern"
-          icon="pi pi-save"
-          :loading="saving"
-          @click="save"
-        />
-      </div>
     </template>
   </div>
 </template>
@@ -256,7 +291,14 @@ function triggerLogoInput(): void {
   gap: 1.5rem;
 }
 
-.settings h1 {
+.settings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.settings__header h1 {
   margin: 0;
 }
 
@@ -352,9 +394,26 @@ function triggerLogoInput(): void {
   color: var(--p-text-muted-color);
 }
 
-.settings__actions {
+.settings__color-row {
   display: flex;
-  justify-content: flex-end;
-  padding-top: 0.5rem;
+  align-items: center;
+  gap: 0.5rem;
 }
+
+.settings__color-swatch {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.125rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius, 6px);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.settings__color-hex {
+  font-family: monospace;
+  max-width: 8rem;
+}
+
 </style>
