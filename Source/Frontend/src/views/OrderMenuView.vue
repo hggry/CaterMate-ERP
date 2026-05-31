@@ -208,6 +208,10 @@ function selectedCountInSection(cat: string): number {
   return (catalog.value ?? []).filter((m) => m.category === cat && assignedIds.value.includes(m.id)).length
 }
 
+function selectedInSection(cat: string): MenuItemDto[] {
+  return (catalog.value ?? []).filter((m) => m.category === cat && assignedIds.value.includes(m.id))
+}
+
 // ── Menu card ──────────────────────────────────────────────────────────────
 const selectedItems = computed(() =>
   (catalog.value ?? []).filter((m) => assignedIds.value.includes(m.id)),
@@ -360,6 +364,26 @@ watch(categoryOptions, () => {
                   <span>Preis</span>
                 </button>
               </span>
+            </div>
+
+            <!-- Selected dishes shown as chips when section is collapsed -->
+            <div
+              v-if="!isSectionOpen(group.category) && selectedCountInSection(group.category) > 0"
+              class="menu-view__collapsed-selected"
+            >
+              <button
+                v-for="item in selectedInSection(group.category)"
+                :key="item.id"
+                type="button"
+                class="menu-view__selected-chip"
+                :disabled="locked"
+                :title="locked ? item.name : `${item.name} abwählen`"
+                @click.stop="toggle(item.id)"
+              >
+                <i class="pi pi-check-circle" />
+                <span>{{ item.name }}</span>
+                <i v-if="!locked" class="pi pi-times menu-view__chip-remove" />
+              </button>
             </div>
 
             <!-- Section body — collapsible -->
@@ -596,6 +620,43 @@ watch(categoryOptions, () => {
   border-color: var(--p-primary-color);
   color: var(--p-primary-color);
   background: color-mix(in srgb, var(--p-primary-color) 10%, transparent);
+}
+
+/* Selected chips shown in collapsed sections */
+.menu-view__collapsed-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem 0.625rem;
+}
+
+.menu-view__selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--p-primary-color);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--p-primary-color) 10%, transparent);
+  color: var(--p-primary-color);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.menu-view__selected-chip:not(:disabled):hover {
+  background: color-mix(in srgb, var(--p-primary-color) 18%, transparent);
+}
+
+.menu-view__selected-chip:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.menu-view__chip-remove {
+  font-size: 0.6875rem;
+  opacity: 0.6;
 }
 
 /* Section body items */

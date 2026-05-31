@@ -292,12 +292,18 @@ public class PdfService : IPdfService
                             .ToList();
                         var multiGroup = groups.Count > 1 || (groups.Count == 1 && !string.IsNullOrEmpty(groups[0].Key));
 
+                        var headerShown = false;
                         foreach (var group in groups)
                         {
                             if (multiGroup && !string.IsNullOrEmpty(group.Key))
                             {
-                                table.Cell().ColumnSpan(6).Background(AltRow).PaddingVertical(4).PaddingHorizontal(6)
-                                    .Text(CourseLabel(group.Key)).Bold().FontSize(8).FontColor(DarkText);
+                                // Visual gap before every group except the first.
+                                if (headerShown)
+                                    table.Cell().ColumnSpan(6).Height(10).Background(White);
+                                table.Cell().ColumnSpan(6).Background(primary)
+                                    .PaddingVertical(7).PaddingHorizontal(8)
+                                    .Text(CourseLabel(group.Key)).Bold().FontSize(9).FontColor(White);
+                                headerShown = true;
                             }
                             foreach (var pos in group)
                                 AddTableRow(table, rowIndex++, pos.MenuItemName, pos.Quantity, pos.UnitPrice,
@@ -380,12 +386,18 @@ public class PdfService : IPdfService
                             .ToList();
                         var multiGroup = groups.Count > 1 || (groups.Count == 1 && !string.IsNullOrEmpty(groups[0].Key));
 
+                        var headerShown = false;
                         foreach (var group in groups)
                         {
                             if (multiGroup && !string.IsNullOrEmpty(group.Key))
                             {
-                                table.Cell().ColumnSpan(6).Background(AltRow).PaddingVertical(4).PaddingHorizontal(6)
-                                    .Text(CourseLabel(group.Key)).Bold().FontSize(8).FontColor(DarkText);
+                                // Visual gap before every group except the first.
+                                if (headerShown)
+                                    table.Cell().ColumnSpan(6).Height(10).Background(White);
+                                table.Cell().ColumnSpan(6).Background(primary)
+                                    .PaddingVertical(7).PaddingHorizontal(8)
+                                    .Text(CourseLabel(group.Key)).Bold().FontSize(9).FontColor(White);
+                                headerShown = true;
                             }
                             foreach (var pos in group)
                                 AddTableRow(table, rowIndex++, pos.MenuItemName, pos.Quantity, pos.UnitPrice,
