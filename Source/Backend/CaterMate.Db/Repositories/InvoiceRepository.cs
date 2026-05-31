@@ -8,7 +8,11 @@ public class InvoiceRepository : IInvoiceRepository
     private readonly DapperContext _context;
 
     private const string SelectByOrderId = "SELECT * FROM Invoices WHERE OrderId = @OrderId LIMIT 1";
-    private const string SelectPositions = "SELECT * FROM InvoicePositions WHERE InvoiceId = @InvoiceId";
+    private const string SelectPositions = @"
+        SELECT ip.*, mi.Category AS MenuItemCategory
+        FROM InvoicePositions ip
+        LEFT JOIN MenuItems mi ON mi.Id = ip.MenuItemId
+        WHERE ip.InvoiceId = @InvoiceId";
     private const string MaxSeq = "SELECT MAX(CAST(SUBSTRING(InvoiceNumber, 9) AS UNSIGNED)) FROM Invoices WHERE InvoiceNumber LIKE @Pattern";
     private const string InsertInvoice = @"
         INSERT INTO Invoices (OrderId, InvoiceNumber, CustomerName, IssueDate, DueDate, TotalNet, TotalVat, TotalGross)

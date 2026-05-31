@@ -111,17 +111,20 @@ const filteredItems = computed(() => {
 })
 
 // ── Per-section collapsible state ──────────────────────────────────────────
-// Open by default if the section contains at least one selected item.
+// Initialised once when the catalog first loads: sections that contain at
+// least one already-selected item open automatically. After that the state
+// is purely user-controlled — toggling a dish never forces a section open
+// or closed (the watch on assignedMenuItems was the culprit).
 const openSections = ref<string[]>([])
 
 watch(
-  [catalog, () => order.value?.assignedMenuItems],
-  () => {
-    if (!catalog.value) return
+  catalog,
+  (cat) => {
+    if (!cat) return
     const selectedCategories = new Set(
-      catalog.value.filter((m) => assignedIds.value.includes(m.id)).map((m) => m.category),
+      cat.filter((m) => assignedIds.value.includes(m.id)).map((m) => m.category),
     )
-    openSections.value = [...new Set([...openSections.value, ...selectedCategories])]
+    openSections.value = [...selectedCategories]
   },
   { immediate: true },
 )
@@ -257,8 +260,14 @@ function toggle(id: number): void {
   if (cur.includes(id)) {
     localCounts.value.delete(id)
     void persist(cur.filter((x) => x !== id))
+    // Deselecting never closes the section — state remains as-is.
   } else {
     localCounts.value.set(id, null)
+    // Open the section of the newly selected item if it was closed.
+    const item = catalog.value?.find((m) => m.id === id)
+    if (item && !openSections.value.includes(item.category)) {
+      openSections.value = [...openSections.value, item.category]
+    }
     void persist([...cur, id])
   }
 }

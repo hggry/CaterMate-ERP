@@ -12,4 +12,6 @@ public class QuotePositionEntity
     public decimal VatRate { get; set; }
     public decimal VatAmount { get; set; }
     public decimal TotalGross { get; set; }
+    // Populated via JOIN with MenuItems at read time — not stored in QuotePositions.
+    public string? MenuItemCategory { get; set; }
 }

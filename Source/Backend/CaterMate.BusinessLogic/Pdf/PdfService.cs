@@ -22,6 +22,26 @@ public class PdfService : IPdfService
     // Formats quantity with two decimal places using German locale
     private static string Qty(decimal v) => v.ToString("N2", De);
 
+    // ── Course ordering for grouped positions ─────────────────────────────────
+    private static readonly (string Key, string Label)[] CourseMap =
+    [
+        ("vorspeise", "Vorspeisen"),
+        ("suppe",     "Suppen"),
+        ("hauptgang", "Hauptspeisen"),
+        ("beilage",   "Beilagen"),
+        ("gebäck",    "Gebäck"),
+        ("dessert",   "Desserts"),
+        ("getränk",   "Getränke"),
+    ];
+
+    private static int CourseRank(string? cat) =>
+        string.IsNullOrEmpty(cat) ? CourseMap.Length :
+        Array.FindIndex(CourseMap, c => c.Key.Equals(cat, StringComparison.OrdinalIgnoreCase));
+
+    private static string CourseLabel(string cat) =>
+        CourseMap.FirstOrDefault(c => c.Key.Equals(cat, StringComparison.OrdinalIgnoreCase)).Label
+        ?? char.ToUpperInvariant(cat[0]) + cat[1..];
+
     // ── Brand colours ────────────────────────────────────────────────────────
     private static readonly Color DefaultPrimary = Color.FromHex("#7AAA28");
     private static readonly Color DarkText       = Color.FromHex("#3E2818");
@@ -251,7 +271,7 @@ public class PdfService : IPdfService
                         });
                     });
 
-                    // Positions table
+                    // Positions table — grouped by course
                     col.Item().Table(table =>
                     {
                         table.ColumnsDefinition(cols =>
@@ -266,11 +286,22 @@ public class PdfService : IPdfService
                         AddTableHeader(table, primary);
 
                         var rowIndex = 0;
-                        foreach (var pos in quote.Positions)
+                        var groups = quote.Positions
+                            .GroupBy(p => p.MenuItemCategory ?? "")
+                            .OrderBy(g => CourseRank(g.Key))
+                            .ToList();
+                        var multiGroup = groups.Count > 1 || (groups.Count == 1 && !string.IsNullOrEmpty(groups[0].Key));
+
+                        foreach (var group in groups)
                         {
-                            AddTableRow(table, rowIndex++,
-                                pos.MenuItemName, pos.Quantity, pos.UnitPrice,
-                                pos.TotalNet, pos.VatRate, pos.TotalGross);
+                            if (multiGroup && !string.IsNullOrEmpty(group.Key))
+                            {
+                                table.Cell().ColumnSpan(6).Background(AltRow).PaddingVertical(4).PaddingHorizontal(6)
+                                    .Text(CourseLabel(group.Key)).Bold().FontSize(8).FontColor(DarkText);
+                            }
+                            foreach (var pos in group)
+                                AddTableRow(table, rowIndex++, pos.MenuItemName, pos.Quantity, pos.UnitPrice,
+                                    pos.TotalNet, pos.VatRate, pos.TotalGross);
                         }
 
                         // Admin fee row
@@ -328,7 +359,7 @@ public class PdfService : IPdfService
                         r.Item().Text(invoice.CustomerName).Bold().FontSize(11).FontColor(DarkText);
                     });
 
-                    // Positions table
+                    // Positions table — grouped by course
                     col.Item().Table(table =>
                     {
                         table.ColumnsDefinition(cols =>
@@ -343,11 +374,22 @@ public class PdfService : IPdfService
                         AddTableHeader(table, primary);
 
                         var rowIndex = 0;
-                        foreach (var pos in invoice.Positions)
+                        var groups = invoice.Positions
+                            .GroupBy(p => p.MenuItemCategory ?? "")
+                            .OrderBy(g => CourseRank(g.Key))
+                            .ToList();
+                        var multiGroup = groups.Count > 1 || (groups.Count == 1 && !string.IsNullOrEmpty(groups[0].Key));
+
+                        foreach (var group in groups)
                         {
-                            AddTableRow(table, rowIndex++,
-                                pos.MenuItemName, pos.Quantity, pos.UnitPrice,
-                                pos.TotalNet, pos.VatRate, pos.TotalGross);
+                            if (multiGroup && !string.IsNullOrEmpty(group.Key))
+                            {
+                                table.Cell().ColumnSpan(6).Background(AltRow).PaddingVertical(4).PaddingHorizontal(6)
+                                    .Text(CourseLabel(group.Key)).Bold().FontSize(8).FontColor(DarkText);
+                            }
+                            foreach (var pos in group)
+                                AddTableRow(table, rowIndex++, pos.MenuItemName, pos.Quantity, pos.UnitPrice,
+                                    pos.TotalNet, pos.VatRate, pos.TotalGross);
                         }
                     });
 

@@ -111,7 +111,8 @@ public class InvoiceService : IInvoiceService
                 TotalNet = p.TotalNet,
                 VatRate = p.VatRate,
                 VatAmount = p.VatAmount,
-                TotalGross = p.TotalGross
+                TotalGross = p.TotalGross,
+                MenuItemCategory = p.MenuItemCategory,
             }).ToList()
         };
 }

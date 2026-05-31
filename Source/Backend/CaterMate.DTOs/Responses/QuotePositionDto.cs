@@ -10,4 +10,5 @@ public class QuotePositionDto
     public decimal VatRate { get; set; }
     public decimal VatAmount { get; set; }
     public decimal TotalGross { get; set; }
+    public string? MenuItemCategory { get; set; }
 }

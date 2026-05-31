@@ -8,7 +8,11 @@ public class QuoteRepository : IQuoteRepository
     private readonly DapperContext _context;
 
     private const string SelectByOrderId = "SELECT * FROM Quotes WHERE OrderId = @OrderId LIMIT 1";
-    private const string SelectPositions = "SELECT * FROM QuotePositions WHERE QuoteId = @QuoteId";
+    private const string SelectPositions = @"
+        SELECT qp.*, mi.Category AS MenuItemCategory
+        FROM QuotePositions qp
+        LEFT JOIN MenuItems mi ON mi.Id = qp.MenuItemId
+        WHERE qp.QuoteId = @QuoteId";
     private const string ExistsByOrderId = "SELECT COUNT(*) FROM Quotes WHERE OrderId = @OrderId";
     private const string InsertQuote = @"
         INSERT INTO Quotes (OrderId, AdminFee, ProfitMarginRate, TotalNet, TotalVat, TotalGross)
