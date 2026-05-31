@@ -50,4 +50,20 @@ function reset(): void {
   font-size: 0.8125rem;
   color: var(--p-text-muted-color);
 }
+
+/* Phone: stack date fields and reset button, each full width. */
+@media (max-width: 767.98px) {
+  .order-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .order-filters__field :deep(.p-datepicker) {
+    width: 100%;
+  }
+
+  .order-filters > :deep(.p-button) {
+    width: 100%;
+  }
+}
 </style>

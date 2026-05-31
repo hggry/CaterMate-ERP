@@ -132,4 +132,19 @@ function onOrderCreated(order: OrderDto): void {
 .order-list :deep(.order-filters) {
   flex-shrink: 0;
 }
+
+/* Phone: stacked header with full-width, equally-sized action buttons. */
+@media (max-width: 767.98px) {
+  .order-list__header {
+    align-items: stretch;
+  }
+
+  .order-list__actions {
+    width: 100%;
+  }
+
+  .order-list__actions :deep(.p-button) {
+    flex: 1;
+  }
+}
 </style>
