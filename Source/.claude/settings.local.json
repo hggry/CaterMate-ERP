@@ -23,7 +23,8 @@
       "PowerShell(docker exec source-db-1 *)",
       "PowerShell(docker cp C:\\\\Temp\\\\seed_testdata.sql source-db-1:/tmp/seed_testdata.sql)",
       "Bash(docker exec *)",
-      "PowerShell(docker exec -i source-db-1 mysql --default-character-set=utf8mb4 -u catermate_user -pcatermate_dev_password catermate_db 2>&1)"
+      "PowerShell(docker exec -i source-db-1 mysql --default-character-set=utf8mb4 -u catermate_user -pcatermate_dev_password catermate_db 2>&1)",
+      "Bash(docker compose ps *)"
     ]
   }
 }
