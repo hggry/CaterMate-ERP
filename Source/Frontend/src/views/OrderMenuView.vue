@@ -478,7 +478,7 @@ watch(categoryOptions, () => {
   align-items: start;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1023.98px) {
   .menu-view__grid {
     grid-template-columns: 1fr;
   }
@@ -492,7 +492,7 @@ watch(categoryOptions, () => {
   margin-bottom: 0.75rem;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 767.98px) {
   .menu-view__filters {
     grid-template-columns: 1fr;
   }

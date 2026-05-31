@@ -260,13 +260,27 @@ async function onUpload(event: FileUploadUploaderEvent): Promise<void> {
   height: 100%;
 }
 
-@media (max-width: 48rem) {
+@media (max-width: 767.98px) {
+  /* Natural page scroll; let the wide table scroll horizontally on its own. */
+  .incoming-view {
+    height: auto;
+    overflow: visible;
+  }
+
+  .incoming-view__table {
+    overflow-x: auto;
+  }
+
+  .incoming-view__datatable {
+    height: auto;
+  }
+
   .incoming-view__upload {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .incoming-view__filters > .p-button {
+  .incoming-view__filters > :deep(.p-button) {
     width: 100%;
   }
 }

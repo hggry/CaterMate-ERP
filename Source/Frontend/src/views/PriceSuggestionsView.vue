@@ -267,8 +267,22 @@ async function discard(item: PriceSuggestionDto): Promise<void> {
   flex-wrap: wrap;
 }
 
-@media (max-width: 48rem) {
-  .suggestions-view__filters > .p-button {
+@media (max-width: 767.98px) {
+  /* Natural page scroll; let the wide table scroll horizontally on its own. */
+  .suggestions-view {
+    height: auto;
+    overflow: visible;
+  }
+
+  .suggestions-view__table {
+    overflow-x: auto;
+  }
+
+  .suggestions-view__datatable {
+    height: auto;
+  }
+
+  .suggestions-view__filters > :deep(.p-button) {
     width: 100%;
   }
 }

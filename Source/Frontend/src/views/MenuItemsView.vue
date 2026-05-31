@@ -13,12 +13,14 @@ import { menuItemsApi } from '@/services/menuItemsApi'
 import { useApi } from '@/composables/useApi'
 import { useFormat } from '@/composables/useFormat'
 import { useResponsivePageRows } from '@/composables/useResponsivePageRows'
+import { useBreakpoint } from '@/composables/useBreakpoint'
 import { useToast } from '@/composables/useToast'
 import { apiErrorMessage } from '@/types/api'
 import type { MenuItemDto } from '@/types/menuItem'
 
 const { data: menuItems, loading, error, execute } = useApi(menuItemsApi.list)
 const { formatCurrency } = useFormat()
+const { isPhone } = useBreakpoint()
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -171,6 +173,28 @@ function onSaved(): void {
       <ProgressSpinner style="width: 3rem; height: 3rem" />
     </div>
 
+    <!-- Phone: tappable card list (tap a card to edit) -->
+    <ul v-else-if="isPhone" class="menu-items-view__cards">
+      <li v-if="filteredMenuItems.length === 0" class="menu-items-view__empty">
+        Keine Menüartikel vorhanden.
+      </li>
+      <li
+        v-for="item in filteredMenuItems"
+        :key="item.id"
+        class="mcard"
+        @click="openEdit(item)"
+      >
+        <div class="mcard__top">
+          <span class="mcard__name">{{ item.name }}</span>
+          <span class="mcard__cat">{{ item.category }}</span>
+        </div>
+        <div class="mcard__meta">
+          <span>VK: {{ formatCurrency(item.salesPricePerPerson) }}</span>
+          <span>EK: {{ formatCurrency(item.purchaseCostPerPerson) }}</span>
+        </div>
+      </li>
+    </ul>
+
     <div v-else ref="tableViewport" class="menu-items-view__table">
       <DataTable
         v-model:first="first"
@@ -294,12 +318,67 @@ function onSaved(): void {
   height: 100%;
 }
 
-@media (max-width: 48rem) {
+/* Phone card list (markup only renders below 768px). */
+.menu-items-view__cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.menu-items-view__empty {
+  color: var(--p-text-muted-color);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.mcard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.875rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius, 8px);
+  background: var(--p-content-background);
+  cursor: pointer;
+}
+
+.mcard:active {
+  background: var(--cm-sand);
+}
+
+.mcard__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.mcard__name {
+  font-weight: 600;
+}
+
+.mcard__meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+@media (max-width: 767.98px) {
+  /* Natural page scroll instead of the fixed-height internal scroll. */
+  .menu-items-view {
+    height: auto;
+    overflow: visible;
+  }
+
   .menu-items-view__header {
     align-items: stretch;
   }
 
-  .menu-items-view__filters > .p-button {
+  .menu-items-view__filters > :deep(.p-button) {
     width: 100%;
   }
 }

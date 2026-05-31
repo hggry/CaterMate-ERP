@@ -12,10 +12,12 @@ import { ingredientsApi } from '@/services/ingredientsApi'
 import { useApi } from '@/composables/useApi'
 import { useFormat } from '@/composables/useFormat'
 import { useResponsivePageRows } from '@/composables/useResponsivePageRows'
+import { useBreakpoint } from '@/composables/useBreakpoint'
 import type { IngredientDto } from '@/types/ingredient'
 
 const { data: ingredients, loading, error, execute } = useApi(ingredientsApi.list)
 const { formatCurrency } = useFormat()
+const { isPhone } = useBreakpoint()
 
 const search = ref('')
 const categoryFilter = ref<string | null>(null)
@@ -131,6 +133,27 @@ function onSaved(): void {
       <ProgressSpinner style="width: 3rem; height: 3rem" />
     </div>
 
+    <!-- Phone: tappable card list (tap a card to edit) -->
+    <ul v-else-if="isPhone" class="ingredients-view__cards">
+      <li v-if="filteredIngredients.length === 0" class="ingredients-view__empty">
+        Keine Zutaten vorhanden.
+      </li>
+      <li
+        v-for="item in filteredIngredients"
+        :key="item.id"
+        class="icard"
+        @click="openEdit(item)"
+      >
+        <div class="icard__top">
+          <span class="icard__name">{{ item.name }}</span>
+          <span class="icard__cat">{{ item.category ?? '—' }}</span>
+        </div>
+        <div class="icard__meta">
+          <span>{{ formatCurrency(item.purchasePricePerUnit) }} / {{ item.unit }}</span>
+        </div>
+      </li>
+    </ul>
+
     <div v-else ref="tableViewport" class="ingredients-view__table">
       <DataTable
         v-model:first="first"
@@ -243,12 +266,70 @@ function onSaved(): void {
   height: 100%;
 }
 
-@media (max-width: 48rem) {
+/* Phone card list (markup only renders below 768px). */
+.ingredients-view__cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.ingredients-view__empty {
+  color: var(--p-text-muted-color);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.icard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.875rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: var(--p-border-radius, 8px);
+  background: var(--p-content-background);
+  cursor: pointer;
+}
+
+.icard:active {
+  background: var(--cm-sand);
+}
+
+.icard__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.icard__name {
+  font-weight: 600;
+}
+
+.icard__cat {
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+}
+
+.icard__meta {
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+@media (max-width: 767.98px) {
+  /* Natural page scroll instead of the fixed-height internal scroll. */
+  .ingredients-view {
+    height: auto;
+    overflow: visible;
+  }
+
   .ingredients-view__header {
     align-items: stretch;
   }
 
-  .ingredients-view__filters > .p-button {
+  .ingredients-view__filters > :deep(.p-button) {
     width: 100%;
   }
 }
