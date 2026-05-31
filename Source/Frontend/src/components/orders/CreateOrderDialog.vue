@@ -44,7 +44,7 @@ async function onSubmit(): Promise<void> {
 </script>
 
 <template>
-  <Dialog v-model:visible="visible" header="Neuer Auftrag" modal :style="{ width: '40rem' }">
+  <Dialog v-model:visible="visible" header="Neuer Auftrag" modal :style="{ width: '40rem' }" :breakpoints="{ '767px': '95vw' }">
     <OrderForm :form="form" :errors="errors" />
 
     <div class="create-order-dialog__actions">

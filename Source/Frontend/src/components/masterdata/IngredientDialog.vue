@@ -83,6 +83,7 @@ async function onSubmit(event: FormSubmitEvent): Promise<void> {
     :header="isEdit ? 'Zutat bearbeiten' : 'Neue Zutat'"
     modal
     :style="{ width: '28rem' }"
+    :breakpoints="{ '767px': '95vw' }"
   >
     <Form
       v-if="visible"
