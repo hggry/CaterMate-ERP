@@ -117,17 +117,9 @@ const filteredItems = computed(() => {
 // or closed (the watch on assignedMenuItems was the culprit).
 const openSections = ref<string[]>([])
 
-watch(
-  catalog,
-  (cat) => {
-    if (!cat) return
-    const selectedCategories = new Set(
-      cat.filter((m) => assignedIds.value.includes(m.id)).map((m) => m.category),
-    )
-    openSections.value = [...selectedCategories]
-  },
-  { immediate: true },
-)
+// Sections start collapsed. The toggle() function opens a section when
+// the user selects an item from it (so the selection stays visible).
+watch(catalog, () => { openSections.value = [] }, { immediate: true })
 
 function isSectionOpen(cat: string): boolean {
   return openSections.value.includes(cat)
